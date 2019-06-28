@@ -9,6 +9,8 @@
 #include <WarpX.H>
 #include <WarpXUtil.H>
 
+#include "perf_dump.h"
+
 using namespace amrex;
 
 int main(int argc, char* argv[])
@@ -26,6 +28,8 @@ int main(int argc, char* argv[])
     ConvertLabParamsToBoost();
 
     BL_PROFILE_VAR("main()", pmain);
+pdump_start_region_with_name( "main()"  );
+pdump_start_profile();
         
     const Real strt_total = amrex::second();
 
@@ -46,6 +50,8 @@ int main(int argc, char* argv[])
 	}
     }
 
+pdump_end_profile();
+pdump_end_region();
     BL_PROFILE_VAR_STOP(pmain);
 
     amrex::Finalize();

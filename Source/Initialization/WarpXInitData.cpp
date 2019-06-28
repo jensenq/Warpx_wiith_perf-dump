@@ -12,6 +12,7 @@
 #ifdef BL_USE_SENSEI_INSITU
 #include <AMReX_AmrMeshInSituBridge.H>
 #endif
+#include "perf_dump.h"
 
 using namespace amrex;
 
@@ -19,6 +20,8 @@ void
 WarpX::InitData ()
 {
     BL_PROFILE("WarpX::InitData()");
+pdump_start_region_with_name( "WarpX::InitData()"  );
+pdump_start_profile();
 
     if (restart_chkfile.empty())
     {
@@ -80,6 +83,8 @@ WarpX::InitData ()
         if ((insitu_int > 0) && (insitu_start == 0))
             UpdateInSitu();
     }
+pdump_end_profile();
+pdump_end_region();
 }
 
 void

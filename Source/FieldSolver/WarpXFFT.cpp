@@ -2,6 +2,7 @@
 #include <WarpX.H>
 #include <WarpX_f.H>
 #include <AMReX_iMultiFab.H>
+#include "perf_dump.h"
 
 using namespace amrex;
 
@@ -396,6 +397,8 @@ WarpX::PushPSATD (int lev, amrex::Real /* dt */)
     auto period_fp = geom[lev].periodicity();
 
     BL_PROFILE_VAR_START(blp_copy);
+pdump_start_region_with_name( "WarpXFFT::CopyDualGrid"  );
+pdump_start_profile();
     Efield_fp_fft[lev][0]->ParallelCopy(*Efield_fp[lev][0], 0, 0, 1, 0, 0, period_fp);
     Efield_fp_fft[lev][1]->ParallelCopy(*Efield_fp[lev][1], 0, 0, 1, 0, 0, period_fp);
     Efield_fp_fft[lev][2]->ParallelCopy(*Efield_fp[lev][2], 0, 0, 1, 0, 0, period_fp);
@@ -406,9 +409,13 @@ WarpX::PushPSATD (int lev, amrex::Real /* dt */)
     current_fp_fft[lev][1]->ParallelCopy(*current_fp[lev][1], 0, 0, 1, 0, 0, period_fp);
     current_fp_fft[lev][2]->ParallelCopy(*current_fp[lev][2], 0, 0, 1, 0, 0, period_fp);
     rho_fp_fft[lev]->ParallelCopy(*rho_fp[lev], 0, 0, 2, 0, 0, period_fp);
+pdump_end_profile();
+pdump_end_region();
     BL_PROFILE_VAR_STOP(blp_copy);
 
     BL_PROFILE_VAR_START(blp_push_eb);
+pdump_start_region_with_name( "PICSAR::FftPushEB"  );
+pdump_start_profile();
     if (fft_hybrid_mpi_decomposition){
 #ifndef AMREX_USE_CUDA // When running on CPU: use PICSAR code
         if (Efield_fp_fft[lev][0]->local_size() == 1)
@@ -483,15 +490,21 @@ WarpX::PushPSATD (int lev, amrex::Real /* dt */)
         solver.BackwardTransform(*Bfield_fp_fft[lev][2], SpectralFieldIndex::Bz);
 
     }
+pdump_end_profile();
+pdump_end_region();
     BL_PROFILE_VAR_STOP(blp_push_eb);
 
     BL_PROFILE_VAR_START(blp_copy);
+pdump_start_region_with_name( "WarpXFFT::CopyDualGrid"  );
+pdump_start_profile();
     CopyDataFromFFTToValid(*Efield_fp[lev][0], *Efield_fp_fft[lev][0], ba_valid_fp_fft[lev], geom[lev]);
     CopyDataFromFFTToValid(*Efield_fp[lev][1], *Efield_fp_fft[lev][1], ba_valid_fp_fft[lev], geom[lev]);
     CopyDataFromFFTToValid(*Efield_fp[lev][2], *Efield_fp_fft[lev][2], ba_valid_fp_fft[lev], geom[lev]);
     CopyDataFromFFTToValid(*Bfield_fp[lev][0], *Bfield_fp_fft[lev][0], ba_valid_fp_fft[lev], geom[lev]);
     CopyDataFromFFTToValid(*Bfield_fp[lev][1], *Bfield_fp_fft[lev][1], ba_valid_fp_fft[lev], geom[lev]);
     CopyDataFromFFTToValid(*Bfield_fp[lev][2], *Bfield_fp_fft[lev][2], ba_valid_fp_fft[lev], geom[lev]);
+pdump_end_profile();
+pdump_end_region();
     BL_PROFILE_VAR_STOP(blp_copy);
 
     if (lev > 0)

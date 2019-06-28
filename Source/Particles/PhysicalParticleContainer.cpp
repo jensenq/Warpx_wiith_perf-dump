@@ -6,6 +6,7 @@
 #include <WarpX.H>
 #include <WarpXConst.H>
 #include <WarpXWrappers.h>
+#include "perf_dump.h"
 
 
 using namespace amrex;
@@ -276,7 +277,8 @@ void
 PhysicalParticleContainer::AddParticles (int lev)
 {
     BL_PROFILE("PhysicalParticleContainer::AddParticles()");
-
+pdump_start_region_with_name(  "PhysicalParticleContainer::AddParticles()" );
+pdump_start_profile();
     if (plasma_injector->add_single_particle) {
         AddNParticles(lev, 1,
                       &(plasma_injector->single_particle_pos[0]),
@@ -307,6 +309,8 @@ PhysicalParticleContainer::AddParticles (int lev)
     if ( plasma_injector->doInjection() ) {
         AddPlasma( lev );
     }
+pdump_end_profile();
+pdump_end_region();
 }
 
 /**
@@ -333,6 +337,7 @@ void
 PhysicalParticleContainer::AddPlasmaCPU (int lev, RealBox part_realbox)
 {
     BL_PROFILE("PhysicalParticleContainer::AddPlasmaCPU");
+pdump_start_region_with_name(  "PhysicalParticleContainer::AddPlasmaCPU" );
 
     // If no part_realbox is provided, initialize particles in the whole domain
     const Geometry& geom = Geom(lev);
@@ -354,11 +359,13 @@ PhysicalParticleContainer::AddPlasmaCPU (int lev, RealBox part_realbox)
 
 #ifdef _OPENMP
     // First touch all tiles in the map in serial
+pdump_start_profile();
     for (MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi) {
         const int grid_id = mfi.index();
         const int tile_id = mfi.LocalTileIndex();
         GetParticles(lev)[std::make_pair(grid_id, tile_id)];
     }
+pdump_end_profile();
 #endif
 
     MultiFab* cost = WarpX::getCosts(lev);
@@ -386,6 +393,7 @@ PhysicalParticleContainer::AddPlasmaCPU (int lev, RealBox part_realbox)
         attribs.fill(0.0);
 
         // Loop through the tiles
+pdump_start_profile();
         for (MFIter mfi = MakeMFIter(lev, info); mfi.isValid(); ++mfi) {
 
             Real wt = amrex::second();
@@ -564,7 +572,9 @@ PhysicalParticleContainer::AddPlasmaCPU (int lev, RealBox part_realbox)
                 });
             }
         }
+pdump_end_profile();
     }
+pdump_end_region();
 }
 
 #ifdef AMREX_USE_GPU
@@ -572,6 +582,7 @@ void
 PhysicalParticleContainer::AddPlasmaGPU (int lev, RealBox part_realbox)
 {
     BL_PROFILE("PhysicalParticleContainer::AddPlasmaGPU");
+pdump_start_region_with_name(  "PhysicalParticleContainer::AddPlasmaGPU" );
 
     // If no part_realbox is provided, initialize particles in the whole domain
     const Geometry& geom = Geom(lev);
@@ -593,11 +604,13 @@ PhysicalParticleContainer::AddPlasmaGPU (int lev, RealBox part_realbox)
 
 #ifdef _OPENMP
     // First touch all tiles in the map in serial
+pdump_start_profile();
     for (MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi) {
         const int grid_id = mfi.index();
         const int tile_id = mfi.LocalTileIndex();
         GetParticles(lev)[std::make_pair(grid_id, tile_id)];
     }
+pdump_end_profile();
 #endif
 
     MultiFab* cost = WarpX::getCosts(lev);
@@ -625,6 +638,7 @@ PhysicalParticleContainer::AddPlasmaGPU (int lev, RealBox part_realbox)
         attribs.fill(0.0);
 
         // Loop through the tiles
+pdump_start_profile();
         for (MFIter mfi = MakeMFIter(lev, info); mfi.isValid(); ++mfi) {
 
             Real wt = amrex::second();
@@ -839,7 +853,9 @@ PhysicalParticleContainer::AddPlasmaGPU (int lev, RealBox part_realbox)
                 });
             }
         }		
+pdump_end_profile();
     }
+pdump_end_region();
 }
 #endif
 
@@ -1008,8 +1024,10 @@ PhysicalParticleContainer::EvolveES (const Vector<std::array<std::unique_ptr<Mul
                                      Real t, Real dt)
 {
     BL_PROFILE("PPC::EvolveES()");
+pdump_start_region_with_name( "PPC::EvolveES()"  );
 
     int num_levels = rho.size();
+pdump_start_profile();
     for (int lev = 0; lev < num_levels; ++lev) {
         BL_ASSERT(OnSameGrids(lev, *rho[lev]));
         const auto& gm = m_gdb->Geom(lev);
@@ -1051,6 +1069,8 @@ PhysicalParticleContainer::EvolveES (const Vector<std::array<std::unique_ptr<Mul
                                prob_domain.lo(), prob_domain.hi());
         }
     }
+pdump_end_profile();
+pdump_end_region();
 }
 #endif // WARPX_DO_ELECTROSTATIC
 
@@ -1296,6 +1316,8 @@ PhysicalParticleContainer::Evolve (int lev,
             if (has_buffer && !do_not_push)
             {
                 BL_PROFILE_VAR_START(blp_partition);
+pdump_start_region_with_name( "PPC::Evolve::partition"  );
+pdump_start_profile();
                 inexflag.resize(np);
                 auto& aos = pti.GetArrayOfStructs();
                 // We need to partition the large buffer first
@@ -1379,6 +1401,8 @@ PhysicalParticleContainer::Evolve (int lev,
                     }
                     std::swap(uzp, tmp);
                 }
+pdump_end_profile();
+pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_partition);
             }
 
@@ -1388,7 +1412,12 @@ PhysicalParticleContainer::Evolve (int lev,
 	    // copy data from particle container to temp arrays
 	    //
 	    BL_PROFILE_VAR_START(blp_copy);
+pdump_start_region_with_name( "PPC::Evolve::Copy"  );
+pdump_start_profile();
             pti.GetPosition(m_xp[thread_num], m_yp[thread_num], m_zp[thread_num]);
+
+pdump_end_profile();
+pdump_end_region();
 	    BL_PROFILE_VAR_STOP(blp_copy);
 
             if (rho) DepositCharge(pti, wp, rho, crho, 0, np_current, np, thread_num, lev);
@@ -1407,6 +1436,8 @@ PhysicalParticleContainer::Evolve (int lev,
                 const long np_gather = (cEx) ? nfine_gather : np;
 
                 BL_PROFILE_VAR_START(blp_pxr_fg);
+pdump_start_region_with_name( "PICSAR::FieldGather"  );
+pdump_start_profile();
 
                 warpx_geteb_energy_conserving(
                     &np_gather,
@@ -1516,14 +1547,20 @@ PhysicalParticleContainer::Evolve (int lev,
                         &lvect_fieldgathe, &WarpX::field_gathering_algo);
                 }
 
+pdump_end_profile();
+pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_pxr_fg);
 
                 //
                 // Particle Push
                 //
                 BL_PROFILE_VAR_START(blp_pxr_pp);
+pdump_start_region_with_name( "PICSAR::ParticlePush"  );
+pdump_start_profile();
                 PushPX(pti, m_xp[thread_num], m_yp[thread_num], m_zp[thread_num], 
                        m_giv[thread_num], dt);
+pdump_end_profile();
+pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_pxr_pp);
 
                 //
@@ -1536,7 +1573,11 @@ PhysicalParticleContainer::Evolve (int lev,
                 // copy particle data back
                 //
                 BL_PROFILE_VAR_START(blp_copy);
+pdump_start_region_with_name( "PPC::Evolve::Copy"  );
+pdump_start_profile();
                 pti.SetPosition(m_xp[thread_num], m_yp[thread_num], m_zp[thread_num]);
+pdump_end_profile();
+pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_copy);
             }
             
@@ -1768,6 +1809,7 @@ PhysicalParticleContainer::PushP (int lev, Real dt,
                                   const MultiFab& Bx, const MultiFab& By, const MultiFab& Bz)
 {
     BL_PROFILE("PhysicalParticleContainer::PushP");
+pdump_start_region_with_name(  "PhysicalParticleContainer::PushP" );
 
     if (do_not_push) return;
 
@@ -1782,6 +1824,7 @@ PhysicalParticleContainer::PushP (int lev, Real dt,
 #else
         int thread_num = 0;
 #endif      
+pdump_start_profile();
         for (WarpXParIter pti(*this, lev); pti.isValid(); ++pti)
 	{
 	    const Box& box = pti.validbox();
@@ -1859,7 +1902,9 @@ PhysicalParticleContainer::PushP (int lev, Real dt,
                                           &this->charge, &this->mass, &dt,
                                           &WarpX::particle_pusher_algo);
         }
+pdump_end_profile();
     }
+pdump_end_region();
 }
 
 void PhysicalParticleContainer::GetParticleSlice(const int direction, const Real z_old,
@@ -1868,6 +1913,7 @@ void PhysicalParticleContainer::GetParticleSlice(const int direction, const Real
                                                  DiagnosticParticles& diagnostic_particles)
 {
     BL_PROFILE("PhysicalParticleContainer::GetParticleSlice");
+pdump_start_region_with_name(  "PhysicalParticleContainer::GetParticleSlice" );
 
     // Assume that the boost in the positive z direction.
 #if (AMREX_SPACEDIM == 2)
@@ -1894,7 +1940,8 @@ void PhysicalParticleContainer::GetParticleSlice(const int direction, const Real
     slice_box.setHi(direction, z_max);
 
     diagnostic_particles.resize(finestLevel()+1);
-    
+
+pdump_start_profile(); 
     for (int lev = 0; lev < nlevs; ++lev) {
 
         const Real* dx  = Geom(lev).CellSize();
@@ -1988,6 +2035,7 @@ void PhysicalParticleContainer::GetParticleSlice(const int direction, const Real
             }
         }
     }
+pdump_end_region();
 }
 
 int PhysicalParticleContainer::GetRefineFac(const Real x, const Real y, const Real z)

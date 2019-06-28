@@ -14,6 +14,8 @@
 #include <AMReX_AmrMeshInSituBridge.H>
 #endif
 
+#include "perf_dump.h"
+
 using namespace amrex;
 
 void
@@ -28,11 +30,15 @@ void
 WarpX::EvolveB (int lev, Real a_dt)
 {
     BL_PROFILE("WarpX::EvolveB()");
+pdump_start_region_with_name(  "WarpX::EvolveB()" );
+pdump_start_profile();
     EvolveB(lev, PatchType::fine, a_dt);
     if (lev > 0)
     {
         EvolveB(lev, PatchType::coarse, a_dt);
     }
+pdump_end_profile();
+pdump_end_region();
 }
 
 void
@@ -176,11 +182,15 @@ void
 WarpX::EvolveE (int lev, Real a_dt)
 {
     BL_PROFILE("WarpX::EvolveE()");
+pdump_start_region_with_name(  "WarpX::EvolveE()" );
+pdump_start_profile();
     EvolveE(lev, PatchType::fine, a_dt);
     if (lev > 0)
     {
         EvolveE(lev, PatchType::coarse, a_dt);
     }
+pdump_end_profile();
+pdump_end_region();
 }
 
 void
@@ -383,6 +393,7 @@ WarpX::EvolveF (int lev, PatchType patch_type, Real a_dt, DtType a_dt_type)
     if (!do_dive_cleaning) return;
 
     BL_PROFILE("WarpX::EvolveF()");
+    pdump_start_region_with_name("WarpX::EvolveF()");
 
     static constexpr Real mu_c2 = PhysConst::mu0*PhysConst::c*PhysConst::c;
 
@@ -423,6 +434,7 @@ WarpX::EvolveF (int lev, PatchType patch_type, Real a_dt, DtType a_dt_type)
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
+        pdump_start_profile();
         for ( MFIter mfi(*pml_F, TilingIfNotGPU()); mfi.isValid(); ++mfi )
         {
             const Box& bx = mfi.tilebox();
@@ -433,6 +445,8 @@ WarpX::EvolveF (int lev, PatchType patch_type, Real a_dt, DtType a_dt_type)
 			  BL_TO_FORTRAN_ANYD((*pml_E[2])[mfi]),
 			  &dtsdx[0], &dtsdx[1], &dtsdx[2]);
         }
+        pdump_end_profile();
     }
+    pdump_end_region();
 }
 

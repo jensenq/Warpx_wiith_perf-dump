@@ -2,6 +2,8 @@
 #include <WarpX.H>
 #include <WarpXConst.H>
 
+#include "perf_dump.h"
+
 using namespace amrex;
 
 void
@@ -207,6 +209,7 @@ void
 WarpX::shiftMF (MultiFab& mf, const Geometry& geom, int num_shift, int dir)
 {
     BL_PROFILE("WarpX::shiftMF()");
+pdump_start_region_with_name(   "WarpX::shiftMF()");
     const BoxArray& ba = mf.boxArray();
     const DistributionMapping& dm = mf.DistributionMap();
     const int nc = mf.nComp();
@@ -229,6 +232,7 @@ WarpX::shiftMF (MultiFab& mf, const Geometry& geom, int num_shift, int dir)
     }
     adjBox = amrex::convert(adjBox, typ);
 
+pdump_start_profile();
     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
         if (idim == dir and typ.nodeCentered(dir)) {
             if (num_shift > 0) {
@@ -241,6 +245,7 @@ WarpX::shiftMF (MultiFab& mf, const Geometry& geom, int num_shift, int dir)
             adjBox.growHi(idim, ng[idim]);
         }
     }
+pdump_end_profile();
 
     IntVect shiftiv(0);
     shiftiv[dir] = num_shift;
@@ -249,6 +254,7 @@ WarpX::shiftMF (MultiFab& mf, const Geometry& geom, int num_shift, int dir)
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
+pdump_start_profile();
     for (MFIter mfi(tmpmf); mfi.isValid(); ++mfi )
     {
         auto const& dstfab = mf.array(mfi);
@@ -273,6 +279,8 @@ WarpX::shiftMF (MultiFab& mf, const Geometry& geom, int num_shift, int dir)
             dstfab(i,j,k,n) = srcfab(i+shift.x,j+shift.y,k+shift.z,n);
         });
     }
+pdump_end_profile();
+pdump_end_region();
 }
 
 void

@@ -13,13 +13,14 @@
 #include <AMReX_AmrMeshInSituBridge.H>
 #endif
 
+#include "perf_dump.h"
 using namespace amrex;
 
 void
 WarpX::EvolveEM (int numsteps)
 {
     BL_PROFILE("WarpX::EvolveEM()");
-
+    pdump_start_region_with_name("WarpX::EvolveEM()");
     Real cur_time = t_new[0];
     static int last_plot_file_step = 0;
     static int last_check_file_step = 0;
@@ -41,6 +42,7 @@ WarpX::EvolveEM (int numsteps)
     for (int step = istep[0]; step < numsteps_max && cur_time < stop_time; ++step)
     {
         Real walltime_beg_step = amrex::second();
+        pdump_start_profile();
 
         // Start loop on time steps
         amrex::Print() << "\nSTEP " << step+1 << " starts ...\n";
@@ -162,7 +164,8 @@ WarpX::EvolveEM (int numsteps)
 
         amrex::Print()<< "STEP " << step+1 << " ends." << " TIME = " << cur_time
                       << " DT = " << dt[0] << "\n";
-        Real walltime_end_step = amrex::second();
+        pdump_end_profile();
+	Real walltime_end_step = amrex::second();
         walltime = walltime_end_step - walltime_start;
         amrex::Print()<< "Walltime = " << walltime
                       << " s; This step = " << walltime_end_step-walltime_beg_step
@@ -211,7 +214,6 @@ WarpX::EvolveEM (int numsteps)
             if (do_insitu)
                 UpdateInSitu();
 	}
-
         if (check_int > 0 && (step+1) % check_int == 0) {
             last_check_file_step = step+1;
             WriteCheckPointFile();
@@ -263,7 +265,7 @@ WarpX::EvolveEM (int numsteps)
     if (do_boosted_frame_diagnostic) {
         myBFD->Flush(geom[0]);
     }
-
+   pdump_end_region();
 #ifdef BL_USE_SENSEI_INSITU
     insitu_bridge->finalize();
 #endif

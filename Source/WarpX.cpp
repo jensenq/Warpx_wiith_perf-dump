@@ -23,6 +23,8 @@
 #include <AMReX_AmrMeshInSituBridge.H>
 #endif
 
+#include "perf_dump.h"
+
 using namespace amrex;
 
 Vector<Real> WarpX::B_external(3, 0.0);
@@ -907,6 +909,8 @@ WarpX::RefRatio (int lev)
 void
 WarpX::Evolve (int numsteps) {
     BL_PROFILE_REGION("WarpX::Evolve()");
+pdump_start_region_with_name(  "WarpX::Evolve()" );
+pdump_start_profile();
 
 #ifdef WARPX_DO_ELECTROSTATIC
     if (do_electrostatic) {
@@ -917,6 +921,8 @@ WarpX::Evolve (int numsteps) {
 #else
     EvolveEM(numsteps);
 #endif // WARPX_DO_ELECTROSTATIC
+pdump_end_profile();
+pdump_end_region();
 }
 
 void

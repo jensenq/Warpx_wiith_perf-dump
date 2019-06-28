@@ -1,6 +1,7 @@
 
 #include <WarpX.H>
 #include <AMReX_BLProfiler.H>
+#include "perf_dump.h"
 
 using namespace amrex;
 
@@ -9,9 +10,11 @@ WarpX::LoadBalance ()
 {
     BL_PROFILE_REGION("LoadBalance");
     BL_PROFILE("WarpX::LoadBalance()");
+    pdump_start_region_with_name("WarpX::LoadBalance()");
 
     AMREX_ALWAYS_ASSERT(costs[0] != nullptr);
 
+pdump_start_profile();
     for (int lev = 0; lev <= finestLevel(); ++lev)
     {
         const Real nboxes = costs[lev]->size();
@@ -22,8 +25,10 @@ WarpX::LoadBalance ()
             : DistributionMapping::makeKnapSack(*costs[lev], nmax);
         RemakeLevel(lev, t_new[lev], boxArray(lev), newdm);
     }
+pdump_end_profile();
 
     mypc->Redistribute();
+pdump_end_region();
 }
 
 void

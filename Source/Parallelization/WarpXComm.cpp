@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include "perf_dump.h"
 
 using namespace amrex;
 
@@ -48,9 +49,11 @@ void
 WarpX::UpdateAuxilaryData ()
 {
     BL_PROFILE("UpdateAuxilaryData()");
+pdump_start_region_with_name(  "UpdateAuxilaryData()" );
 
     const int use_limiter = 0;
 
+pdump_start_profile();
     for (int lev = 1; lev <= finest_level; ++lev)
     {
         const auto& crse_period = Geom(lev-1).periodicity();
@@ -206,6 +209,8 @@ WarpX::UpdateAuxilaryData ()
             }
         }
     }
+	pdump_end_profile();
+	pdump_end_region();
 }
 
 void
@@ -355,9 +360,11 @@ void
 WarpX::SyncCurrent ()
 {
     BL_PROFILE("SyncCurrent()");
+pdump_start_region_with_name(  "SyncCurrent()" );
 
     // Restrict fine patch current onto the coarse patch, before
     // summing the guard cells of the fine patch
+pdump_start_profile();
     for (int lev = 1; lev <= finest_level; ++lev)
     {
         current_cp[lev][0]->setVal(0.0);
@@ -374,12 +381,13 @@ WarpX::SyncCurrent ()
                                              current_cp[lev][2].get() };
         SyncCurrent(fine, crse, refinement_ratio[0]);
     }
-
+pdump_end_profile();
     Vector<Array<std::unique_ptr<MultiFab>,3> > j_fp(finest_level+1);
     Vector<Array<std::unique_ptr<MultiFab>,3> > j_cp(finest_level+1);
     Vector<Array<std::unique_ptr<MultiFab>,3> > j_buf(finest_level+1);
 
     if (WarpX::use_filter) {
+pdump_start_profile();
         for (int lev = 0; lev <= finest_level; ++lev) {
             IntVect ng = current_fp[lev][0]->nGrowVect();
             ng += bilinear_filter.stencil_length_each_dir-1;
@@ -399,6 +407,8 @@ WarpX::SyncCurrent ()
                 // j_fp contains the exact MultiFab current_fp before this step.
             }
         }
+pdump_end_profile();
+pdump_start_profile();
         for (int lev = 1; lev <= finest_level; ++lev) {
             IntVect ng = current_cp[lev][0]->nGrowVect();
             ng += bilinear_filter.stencil_length_each_dir-1;
@@ -410,6 +420,9 @@ WarpX::SyncCurrent ()
                 std::swap(j_cp[lev][idim], current_cp[lev][idim]);
             }
         }
+
+pdump_end_profile();
+pdump_start_profile();
         for (int lev = 1; lev <= finest_level; ++lev) {
             if (current_buf[lev][0]) {
                 IntVect ng = current_buf[lev][0]->nGrowVect();
@@ -423,9 +436,11 @@ WarpX::SyncCurrent ()
                 }
             }
         }
-    }
+pdump_end_profile();
 
+    }
     // Sum up fine patch
+pdump_start_profile();
     for (int lev = 0; lev <= finest_level; ++lev)
     {
         const auto& period = Geom(lev).periodicity();
@@ -436,6 +451,8 @@ WarpX::SyncCurrent ()
         WarpXSumGuardCells(*(current_fp[lev][1]),period);
         WarpXSumGuardCells(*(current_fp[lev][2]),period);
     }
+pdump_end_profile();
+pdump_start_profile();
 
     // Add fine level's coarse patch to coarse level's fine patch
     for (int lev = 0; lev < finest_level; ++lev)
@@ -459,6 +476,8 @@ WarpX::SyncCurrent ()
         current_fp[lev][1]->copy(*ccy,0,0,1,ngsrc,ngdst,period,FabArrayBase::ADD);
         current_fp[lev][2]->copy(*ccz,0,0,1,ngsrc,ngdst,period,FabArrayBase::ADD);
     }
+pdump_end_profile();
+pdump_start_profile();
 
     // Sum up coarse patch
     for (int lev = 1; lev <= finest_level; ++lev)
@@ -468,8 +487,11 @@ WarpX::SyncCurrent ()
         WarpXSumGuardCells(*(current_cp[lev][1]),cperiod);
         WarpXSumGuardCells(*(current_cp[lev][2]),cperiod);
     }
+pdump_end_profile();
 
     if (WarpX::use_filter) {
+
+pdump_start_profile();
         for (int lev = 0; lev <= finest_level; ++lev)
         {
             for (int idim = 0; idim < 3; ++idim) {
@@ -483,6 +505,8 @@ WarpX::SyncCurrent ()
                 // correct filtered values here.
             }
         }
+pdump_end_profile();
+pdump_start_profile();
         for (int lev = 1; lev <= finest_level; ++lev)
         {
             for (int idim = 0; idim < 3; ++idim) {
@@ -490,6 +514,10 @@ WarpX::SyncCurrent ()
                 MultiFab::Copy(*current_cp[lev][idim], *j_cp[lev][idim], 0, 0, 1, 0);
             }
         }
+pdump_end_profile();
+pdump_start_profile();
+
+
         for (int lev = 1; lev <= finest_level; ++lev)
         {
             for (int idim = 0; idim < 3; ++idim) {
@@ -499,9 +527,13 @@ WarpX::SyncCurrent ()
                 }
             }
         }
+pdump_end_profile();
+
+
     }
 
     // sync shared nodal edges
+pdump_start_profile();
     for (int lev = 0; lev <= finest_level; ++lev)
     {
         const auto& period = Geom(lev).periodicity();
@@ -509,6 +541,10 @@ WarpX::SyncCurrent ()
         current_fp[lev][1]->OverrideSync(*current_fp_owner_masks[lev][1], period);
         current_fp[lev][2]->OverrideSync(*current_fp_owner_masks[lev][2], period);
     }
+pdump_end_profile();
+pdump_start_profile();
+
+
     for (int lev = 1; lev <= finest_level; ++lev)
     {
         const auto& cperiod = Geom(lev-1).periodicity();
@@ -516,6 +552,10 @@ WarpX::SyncCurrent ()
         current_cp[lev][1]->OverrideSync(*current_cp_owner_masks[lev][1], cperiod);
         current_cp[lev][2]->OverrideSync(*current_cp_owner_masks[lev][2], cperiod);
     }
+pdump_end_profile();
+pdump_end_region();
+
+
 }
 
 /** \brief Fills the values of the current on the coarse patch by

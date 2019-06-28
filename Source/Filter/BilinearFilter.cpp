@@ -5,6 +5,7 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
+#include "perf_dump.h"
 
 using namespace amrex;
 
@@ -46,6 +47,9 @@ namespace {
 
 void BilinearFilter::ComputeStencils(){
     BL_PROFILE("BilinearFilter::ComputeStencils()");
+    pdump_start_region_with_name(  "BilinearFilter::ComputeStencils()" );
+    pdump_start_profile();
+
     stencil_length_each_dir = npass_each_dir;
     stencil_length_each_dir += 1.;
 #if (AMREX_SPACEDIM == 3)
@@ -67,4 +71,7 @@ void BilinearFilter::ComputeStencils(){
 #if (AMREX_SPACEDIM == 2)
     slen.z = 1;
 #endif
+
+    pdump_end_profile();
+    pdump_end_region();
 }

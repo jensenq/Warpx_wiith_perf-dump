@@ -5,6 +5,8 @@
 #include <AMReX_ParmParse.H>
 #include <WarpX.H>
 
+#include "perf_dump.h"
+
 using namespace amrex;
 
 void ReadBoostedFrameParameters(Real& gamma_boost, Real& beta_boost,
@@ -118,9 +120,11 @@ void ConvertLabParamsToBoost()
  */
 void NullifyMF(amrex::MultiFab& mf, int lev, amrex::Real zmin, amrex::Real zmax){
     BL_PROFILE("WarpX::NullifyMF()");
+pdump_start_region_with_name(  "WarpX::NullifyMF()" );
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
+pdump_start_profile();
     for(amrex::MFIter mfi(mf, amrex::TilingIfNotGPU()); mfi.isValid(); ++mfi){
         const amrex::Box& bx = mfi.tilebox();
         // Get box lower and upper physical z bound, and dz
@@ -151,4 +155,6 @@ void NullifyMF(amrex::MultiFab& mf, int lev, amrex::Real zmin, amrex::Real zmax)
             );
         }
     }
+pdump_end_profile();
+pdump_end_region();
 }

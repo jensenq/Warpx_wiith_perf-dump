@@ -4,6 +4,8 @@
 #include <WarpX.H>
 #include <WarpX_f.H>
 
+#include "perf_dump.h"
+
 namespace
 {
     const std::string level_prefix {"Level_"};
@@ -27,6 +29,8 @@ WarpX::EvolveES (int numsteps) {
     amrex::Print() << "Running in electrostatic mode \n";
 
     BL_PROFILE("WarpX::EvolveES()");
+    pdump_start_region_with_name("WarpX::EvolveES()");
+
     Real cur_time = t_new[0];
     static int last_plot_file_step = 0;
     static int last_check_file_step = 0;
@@ -46,6 +50,8 @@ WarpX::EvolveES (int numsteps) {
     Vector<std::unique_ptr<MultiFab> > phiNodal(num_levels);
     Vector<std::array<std::unique_ptr<MultiFab>, 3> > eFieldNodal(num_levels);
     const int ng = 1;
+
+    pdump_start_profile();
     for (int lev = 0; lev <= max_level; lev++) {
         BoxArray nba = boxArray(lev);
         nba.surroundingNodes();
@@ -56,7 +62,11 @@ WarpX::EvolveES (int numsteps) {
         eFieldNodal[lev][1].reset(new MultiFab(nba, dmap[lev], 1, ng));
         eFieldNodal[lev][2].reset(new MultiFab(nba, dmap[lev], 1, ng));
     }
+    pdump_end_profile();
 
+
+
+    pdump_start_profile();
     const int lev = 0;
     for (int step = istep[0]; step < numsteps_max && cur_time < stop_time; ++step)
     {
@@ -155,6 +165,7 @@ WarpX::EvolveES (int numsteps) {
 #endif
 	// End loop on time steps
     }
+    pdump_end_profile();
 
     if (plot_int > 0 && istep[0] > last_plot_file_step && (max_time_reached || istep[0] >= max_step)) {
         WritePlotFileES(rhoNodal, phiNodal, eFieldNodal);
@@ -163,6 +174,7 @@ WarpX::EvolveES (int numsteps) {
     if (check_int > 0 && istep[0] > last_check_file_step && (max_time_reached || istep[0] >= max_step)) {
 	WriteCheckPointFile();
     }
+    pdump_end_region();
 }
 
 void WarpX::zeroOutBoundary(amrex::MultiFab& input_data,
