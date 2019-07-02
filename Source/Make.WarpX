@@ -1,4 +1,4 @@
-AMREX_HOME ?= ../../../amrex
+MREX_HOME ?= ../../../amrex
 PICSAR_HOME ?= ../../../picsar
 OPENBC_HOME ?= ../../../openbc_poisson
 
@@ -144,6 +144,10 @@ endif
 # job_info support
 CEXE_sources += AMReX_buildInfo.cpp
 CEXE_headers += $(AMREX_HOME)/Tools/C_scripts/AMReX_buildInfo.H
+INCLUDE_LOCATIONS += /global/homes/j/jensenq/perf-dump
+LIBRARIES += /global/homes/j/jensenq/perf-dump/build/libperfdump.a /opt/cray/pe/papi/5.6.0.6/lib/libpapi.a /usr/common/software/hdf5-parallel/1.10.2/intel/lib/libhdf5.a -lz -lm
+
+
 INCLUDE_LOCATIONS += $(AMREX_HOME)/Tools/C_scripts
 
 ifeq ($(USE_PYTHON_MAIN),TRUE)
@@ -216,3 +220,4 @@ include $(AMREX_HOME)/Tools/GNUMake/Make.rules
 
 clean::
 	$(SILENT) $(RM) AMReX_buildInfo.cpp
+

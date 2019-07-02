@@ -344,8 +344,8 @@ WarpXParticleContainer::DepositCurrent(WarpXParIter& pti,
 #endif
 
       BL_PROFILE_VAR_START(blp_pxr_cd);
-pdump_start_region_with_name( "PICSAR::CurrentDeposition"  );
-pdump_start_profile();
+//pdump_start_region_with_name( "PICSAR::CurrentDeposition"  );
+//pdump_start_profile();
       warpx_current_deposition(
            jx_ptr, &ngJ, jxntot.getVect(),
            jy_ptr, &ngJ, jyntot.getVect(),
@@ -369,21 +369,21 @@ pdump_start_profile();
                                   jz_ptr, &ngJ, jzntot.getVect(),
                                   &xyzmin[0], &dx[0]);
 #endif
-pdump_end_profile();
-pdump_end_region();
+//pdump_end_profile();
+//pdump_end_region();
       BL_PROFILE_VAR_STOP(blp_pxr_cd);
 
 #ifndef AMREX_USE_GPU
       BL_PROFILE_VAR_START(blp_accumulate);
-pdump_start_region_with_name( "PICSAR::CurrentDeposition"  );
-pdump_start_profile();
+//pdump_start_region_with_name( "PICSAR::CurrentDeposition"  );
+//pdump_start_profile();
 
       jx[pti].atomicAdd(local_jx[thread_num], tbx, tbx, 0, 0, 1);
       jy[pti].atomicAdd(local_jy[thread_num], tby, tby, 0, 0, 1);
       jz[pti].atomicAdd(local_jz[thread_num], tbz, tbz, 0, 0, 1);
 
-pdump_end_profile();
-pdump_end_region();
+//pdump_end_profile();
+//pdump_end_region();
       BL_PROFILE_VAR_STOP(blp_accumulate);
 #endif
   }
@@ -431,8 +431,8 @@ pdump_end_region();
 
       long ncrse = np - np_current;
       BL_PROFILE_VAR_START(blp_pxr_cd);
-pdump_start_region_with_name( "PICSAR::CurrentDeposition"  );
-pdump_start_profile();
+//pdump_start_region_with_name( "PICSAR::CurrentDeposition"  );
+//pdump_start_profile();
 
 
       warpx_current_deposition(
@@ -460,21 +460,21 @@ pdump_start_profile();
                                   &xyzmin[0], &dx[0]);
 #endif
 
-pdump_end_profile();
-pdump_end_region();
+//pdump_end_profile();
+//pdump_end_region();
       BL_PROFILE_VAR_STOP(blp_pxr_cd);
 
 #ifndef AMREX_USE_GPU
       BL_PROFILE_VAR_START(blp_accumulate);
-pdump_start_region_with_name( "PICSAR::CurrentDeposition"  );
-pdump_start_profile();
+//pdump_start_region_with_name( "PICSAR::CurrentDeposition"  );
+//pdump_start_profile();
 
       (*cjx)[pti].atomicAdd(local_jx[thread_num], tbx, tbx, 0, 0, 1);
       (*cjy)[pti].atomicAdd(local_jy[thread_num], tby, tby, 0, 0, 1);
       (*cjz)[pti].atomicAdd(local_jz[thread_num], tbz, tbz, 0, 0, 1);
 
-pdump_end_profile();
-pdump_end_region();
+//pdump_end_profile();
+//pdump_end_region();
       BL_PROFILE_VAR_STOP(blp_accumulate);
 #endif
     }

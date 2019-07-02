@@ -1220,6 +1220,9 @@ PhysicalParticleContainer::Evolve (int lev,
         RealVector tmp;
         ParticleVector particle_tmp;
 
+
+pdump_start_region_with_name("PPC::Evolve()");
+pdump_start_profile();
 	for (WarpXParIter pti(*this, lev); pti.isValid(); ++pti)
 	{
             Real wt = amrex::second();
@@ -1316,8 +1319,8 @@ PhysicalParticleContainer::Evolve (int lev,
             if (has_buffer && !do_not_push)
             {
                 BL_PROFILE_VAR_START(blp_partition);
-pdump_start_region_with_name( "PPC::Evolve::partition"  );
-pdump_start_profile();
+//pdump_start_region_with_name( "PPC::Evolve::partition"  );
+//pdump_start_profile();
                 inexflag.resize(np);
                 auto& aos = pti.GetArrayOfStructs();
                 // We need to partition the large buffer first
@@ -1401,8 +1404,8 @@ pdump_start_profile();
                     }
                     std::swap(uzp, tmp);
                 }
-pdump_end_profile();
-pdump_end_region();
+//pdump_end_profile();
+//pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_partition);
             }
 
@@ -1412,12 +1415,12 @@ pdump_end_region();
 	    // copy data from particle container to temp arrays
 	    //
 	    BL_PROFILE_VAR_START(blp_copy);
-pdump_start_region_with_name( "PPC::Evolve::Copy"  );
-pdump_start_profile();
+//pdump_start_region_with_name( "PPC::Evolve::Copy"  );
+//pdump_start_profile();
             pti.GetPosition(m_xp[thread_num], m_yp[thread_num], m_zp[thread_num]);
 
-pdump_end_profile();
-pdump_end_region();
+//pdump_end_profile();
+//pdump_end_region();
 	    BL_PROFILE_VAR_STOP(blp_copy);
 
             if (rho) DepositCharge(pti, wp, rho, crho, 0, np_current, np, thread_num, lev);
@@ -1436,8 +1439,8 @@ pdump_end_region();
                 const long np_gather = (cEx) ? nfine_gather : np;
 
                 BL_PROFILE_VAR_START(blp_pxr_fg);
-pdump_start_region_with_name( "PICSAR::FieldGather"  );
-pdump_start_profile();
+//pdump_start_region_with_name( "PICSAR::FieldGather"  );
+//pdump_start_profile();
 
                 warpx_geteb_energy_conserving(
                     &np_gather,
@@ -1547,20 +1550,20 @@ pdump_start_profile();
                         &lvect_fieldgathe, &WarpX::field_gathering_algo);
                 }
 
-pdump_end_profile();
-pdump_end_region();
+//pdump_end_profile();
+//pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_pxr_fg);
 
                 //
                 // Particle Push
                 //
                 BL_PROFILE_VAR_START(blp_pxr_pp);
-pdump_start_region_with_name( "PICSAR::ParticlePush"  );
-pdump_start_profile();
+//pdump_start_region_with_name( "PICSAR::ParticlePush"  );
+//pdump_start_profile();
                 PushPX(pti, m_xp[thread_num], m_yp[thread_num], m_zp[thread_num], 
                        m_giv[thread_num], dt);
-pdump_end_profile();
-pdump_end_region();
+//pdump_end_profile();
+//pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_pxr_pp);
 
                 //
@@ -1573,11 +1576,11 @@ pdump_end_region();
                 // copy particle data back
                 //
                 BL_PROFILE_VAR_START(blp_copy);
-pdump_start_region_with_name( "PPC::Evolve::Copy"  );
-pdump_start_profile();
+//pdump_start_region_with_name( "PPC::Evolve::Copy"  );
+//pdump_start_profile();
                 pti.SetPosition(m_xp[thread_num], m_yp[thread_num], m_zp[thread_num]);
-pdump_end_profile();
-pdump_end_region();
+//pdump_end_profile();
+//pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_copy);
             }
             
@@ -1594,6 +1597,8 @@ pdump_end_region();
                 });
             }
         }
+pdump_end_profile();
+pdump_end_region();
     }
     // Split particles
     if (do_splitting){ SplitParticles(lev); }
