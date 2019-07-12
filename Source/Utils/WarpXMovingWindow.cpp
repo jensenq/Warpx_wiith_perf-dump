@@ -1,7 +1,7 @@
 
 #include <WarpX.H>
 #include <WarpXConst.H>
-#include "perf-dump.h"
+#include "perf_dump.h"
 
 using namespace amrex;
 

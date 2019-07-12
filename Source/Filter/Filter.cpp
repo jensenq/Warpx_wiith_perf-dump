@@ -1,6 +1,6 @@
 #include <WarpX.H>
 #include <Filter.H>
-#include "perf-dump.h"
+#include "perf_dump.h"
 
 #ifdef _OPENMP
 #include <omp.h>
