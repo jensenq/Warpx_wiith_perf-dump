@@ -5,7 +5,6 @@
 #include <MultiParticleContainer.H>
 #include <WarpX_f.H>
 #include <WarpX.H>
-#include "perf_dump.h"
 
 using namespace amrex;
 
@@ -389,10 +388,8 @@ MultiParticleContainer
 {
 
     BL_PROFILE("MultiParticleContainer::GetLabFrameData");
-pdump_start_region_with_name(  "MultiParticleContainer::GetLabFrameData" );
     
     // Loop over particle species
-pdump_start_profile();
     for (int i = 0; i < nspecies_boosted_frame_diags; ++i){
         int isp = map_species_boosted_frame_diags[i];
         WarpXParticleContainer* pc = allcontainers[isp].get();
@@ -441,8 +438,6 @@ pdump_start_profile();
             }
         }
     }
-pdump_end_profile();
-pdump_end_region();
 }
 
 /* \brief Continuous injection for particles initially outside of the domain.

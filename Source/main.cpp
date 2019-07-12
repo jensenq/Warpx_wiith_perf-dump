@@ -8,13 +8,13 @@
 
 #include <WarpX.H>
 #include <WarpXUtil.H>
-
-#include "perf_dump.h"
+#include "perf-dump.h"
 
 using namespace amrex;
 
 int main(int argc, char* argv[])
 {
+pdump_init();
 #if defined(_OPENMP) && defined(WARPX_USE_PSATD)
     int provided;
     MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
@@ -28,8 +28,6 @@ int main(int argc, char* argv[])
     ConvertLabParamsToBoost();
 
     BL_PROFILE_VAR("main()", pmain);
-pdump_start_region_with_name( "main()"  );
-pdump_start_profile();
         
     const Real strt_total = amrex::second();
 
@@ -50,8 +48,6 @@ pdump_start_profile();
 	}
     }
 
-pdump_end_profile();
-pdump_end_region();
     BL_PROFILE_VAR_STOP(pmain);
 
     amrex::Finalize();

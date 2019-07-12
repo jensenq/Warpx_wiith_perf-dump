@@ -588,6 +588,8 @@ PML::ExchangeF (PatchType patch_type, MultiFab* Fp)
 void
 PML::Exchange (MultiFab& pml, MultiFab& reg, const Geometry& geom)
 {
+pdump_end_region_with_name("PML::Exchange");
+pdump_end_profile();
     const IntVect& ngr = reg.nGrowVect();
     const IntVect& ngp = pml.nGrowVect();
     const int ncp = pml.nComp();
@@ -626,6 +628,8 @@ PML::Exchange (MultiFab& pml, MultiFab& reg, const Geometry& geom)
     MultiFab::Copy(tmpregmf,reg,0,0,1,0);
     tmpregmf.setVal(0.0, 1, ncp-1, 0);
     pml.ParallelCopy(tmpregmf, 0, 0, ncp, IntVect(0), ngp, period);
+pdump_end_profile();
+pdump_end_region();
 }
 
 void

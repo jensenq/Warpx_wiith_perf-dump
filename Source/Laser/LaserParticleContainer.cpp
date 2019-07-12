@@ -8,7 +8,6 @@
 #include <WarpXConst.H>
 #include <WarpX_f.H>
 #include <MultiParticleContainer.H>
-#include "perf_dump.h"
 
 using namespace amrex;
 
@@ -401,7 +400,6 @@ LaserParticleContainer::Evolve (int lev,
     BL_PROFILE_VAR_NS("PICSAR::LaserParticlePush", blp_pxr_pp);
     BL_PROFILE_VAR_NS("PICSAR::LaserCurrentDepo", blp_pxr_cd);
     BL_PROFILE_VAR_NS("Laser::Evolve::Accumulate", blp_accumulate);
-pdump_start_region_with_name(  "Laser::Evolve()" );
 
     Real t_lab = t;
     if (WarpX::gamma_boost > 1) {
@@ -427,7 +425,6 @@ pdump_start_region_with_name(  "Laser::Evolve()" );
 
         Cuda::ManagedDeviceVector<Real> plane_Xp, plane_Yp, amplitude_E;
 
-			pdump_start_profile();
         for (WarpXParIter pti(*this, lev); pti.isValid(); ++pti)
         {
             Real wt = amrex::second();
@@ -521,17 +518,14 @@ pdump_start_region_with_name(  "Laser::Evolve()" );
             if (cost) {
                 const Box& tbx = pti.tilebox();
                 wt = (amrex::second() - wt) / tbx.d_numPts();
-                Array4<Real> const& costarr = cost->array(pti);
-                amrex::ParallelFor(tbx,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                FArrayBox* costfab = cost->fabPtr(pti);
+                AMREX_LAUNCH_HOST_DEVICE_LAMBDA ( tbx, work_box,
                 {
-                    costarr(i,j,k) += wt;
+                    costfab->plus(wt, work_box);
                 });
             }
         }
-    pdump_end_profile();
     }
-    pdump_end_region();
 }
 
 void

@@ -5,8 +5,6 @@
 #include <AMReX_ParmParse.H>
 #include <WarpX.H>
 
-#include "perf_dump.h"
-
 using namespace amrex;
 
 void ReadBoostedFrameParameters(Real& gamma_boost, Real& beta_boost,
@@ -53,24 +51,15 @@ void ConvertLabParamsToBoost()
     Vector<Real> prob_hi(AMREX_SPACEDIM);
     Vector<Real> fine_tag_lo(AMREX_SPACEDIM);
     Vector<Real> fine_tag_hi(AMREX_SPACEDIM);
-    Vector<Real> slice_lo(AMREX_SPACEDIM);
-    Vector<Real> slice_hi(AMREX_SPACEDIM);
 
     ParmParse pp_geom("geometry");
     ParmParse pp_wpx("warpx");
     ParmParse pp_amr("amr");
-    ParmParse pp_slice("slice");
 
     pp_geom.getarr("prob_lo",prob_lo,0,AMREX_SPACEDIM);
     BL_ASSERT(prob_lo.size() == AMREX_SPACEDIM);
     pp_geom.getarr("prob_hi",prob_hi,0,AMREX_SPACEDIM);
     BL_ASSERT(prob_hi.size() == AMREX_SPACEDIM);
-
-    pp_slice.queryarr("dom_lo",slice_lo,0,AMREX_SPACEDIM);
-    BL_ASSERT(slice_lo.size() == AMREX_SPACEDIM);
-    pp_slice.queryarr("dom_hi",slice_hi,0,AMREX_SPACEDIM);
-    BL_ASSERT(slice_hi.size() == AMREX_SPACEDIM);
-    
 
     pp_amr.query("max_level", max_level);
     if (max_level > 0){
@@ -97,22 +86,15 @@ void ConvertLabParamsToBoost()
               fine_tag_lo[idim] *= convert_factor;
               fine_tag_hi[idim] *= convert_factor;
             }
-            slice_lo[idim] *= convert_factor;
-            slice_hi[idim] *= convert_factor;
             break;
         }
     }
-
     pp_geom.addarr("prob_lo", prob_lo);
     pp_geom.addarr("prob_hi", prob_hi);
     if (max_level > 0){
       pp_wpx.addarr("fine_tag_lo", fine_tag_lo);
       pp_wpx.addarr("fine_tag_hi", fine_tag_hi);
     }
-
-    pp_slice.addarr("dom_lo",slice_lo);
-    pp_slice.addarr("dom_hi",slice_hi);
-
 }
 
 /* \brief Function that sets the value of MultiFab MF to zero for z between 
@@ -120,11 +102,9 @@ void ConvertLabParamsToBoost()
  */
 void NullifyMF(amrex::MultiFab& mf, int lev, amrex::Real zmin, amrex::Real zmax){
     BL_PROFILE("WarpX::NullifyMF()");
-pdump_start_region_with_name(  "WarpX::NullifyMF()" );
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-pdump_start_profile();
     for(amrex::MFIter mfi(mf, amrex::TilingIfNotGPU()); mfi.isValid(); ++mfi){
         const amrex::Box& bx = mfi.tilebox();
         // Get box lower and upper physical z bound, and dz
@@ -155,6 +135,4 @@ pdump_start_profile();
             );
         }
     }
-pdump_end_profile();
-pdump_end_region();
 }

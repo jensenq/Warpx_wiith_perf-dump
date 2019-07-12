@@ -12,7 +12,6 @@
 #ifdef BL_USE_SENSEI_INSITU
 #include <AMReX_AmrMeshInSituBridge.H>
 #endif
-#include "perf_dump.h"
 
 using namespace amrex;
 
@@ -20,8 +19,6 @@ void
 WarpX::InitData ()
 {
     BL_PROFILE("WarpX::InitData()");
-pdump_start_region_with_name( "WarpX::InitData()"  );
-pdump_start_profile();
 
     if (restart_chkfile.empty())
     {
@@ -83,8 +80,6 @@ pdump_start_profile();
         if ((insitu_int > 0) && (insitu_start == 0))
             UpdateInSitu();
     }
-pdump_end_profile();
-pdump_end_region();
 }
 
 void
@@ -327,7 +322,6 @@ WarpX::InitLevelData (int lev, Real time)
 void
 WarpX::InitLevelDataFFT (int lev, Real time)
 {
- 
     Efield_fp_fft[lev][0]->setVal(0.0);
     Efield_fp_fft[lev][1]->setVal(0.0);
     Efield_fp_fft[lev][2]->setVal(0.0);
@@ -352,7 +346,6 @@ WarpX::InitLevelDataFFT (int lev, Real time)
         current_cp_fft[lev][2]->setVal(0.0);
         rho_cp_fft[lev]->setVal(0.0);
     }
-
 }
 
 #endif

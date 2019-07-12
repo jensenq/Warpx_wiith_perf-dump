@@ -25,7 +25,7 @@ class SpectralFieldData
     // (plans are only initialized for the boxes that are owned by
     // the local MPI rank)
 #ifdef AMREX_USE_GPU
-    using FFTplans = amrex::LayoutData<cufftHandle>;
+    // Add cuFFT-specific code
 #else
     using FFTplans = amrex::LayoutData<fftw_plan>;
 #endif

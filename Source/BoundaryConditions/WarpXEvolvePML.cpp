@@ -8,8 +8,6 @@
 #include <WarpX_py.H>
 #endif
 
-#include "perf_dump.h"
-
 #ifdef BL_USE_SENSEI_INSITU
 #include <AMReX_AmrMeshInSituBridge.H>
 #endif
@@ -35,9 +33,8 @@ void
 WarpX::DampPML (int lev, PatchType patch_type)
 {
     if (!do_pml) return;
- 
-    BL_PROFILE("WarpX::DampPML()"); 
-    pdump_start_region_with_name("WarpX::DampPML()"); 
+
+    BL_PROFILE("WarpX::DampPML()");
 
     if (pml[lev]->ok())
     {
@@ -50,7 +47,6 @@ WarpX::DampPML (int lev, PatchType patch_type)
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-			pdump_start_profile();		
         for ( MFIter mfi(*pml_E[0], TilingIfNotGPU()); mfi.isValid(); ++mfi )
         {
             const Box& tex  = mfi.tilebox(Ex_nodal_flag);
@@ -81,7 +77,5 @@ WarpX::DampPML (int lev, PatchType patch_type)
 			        WRPX_PML_TO_FORTRAN(sigba[mfi]));
             }
         }
-	pdump_end_profile();
     }
-	pdump_end_region();
 }

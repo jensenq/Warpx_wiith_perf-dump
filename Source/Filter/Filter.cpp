@@ -1,10 +1,10 @@
 #include <WarpX.H>
 #include <Filter.H>
+#include "perf-dump.h"
 
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#include "perf_dump.h"
 
 using namespace amrex;
 
@@ -21,10 +21,10 @@ void
 Filter::ApplyStencil (MultiFab& dstmf, const MultiFab& srcmf, int scomp, int dcomp, int ncomp)
 {
     BL_PROFILE("BilinearFilter::ApplyStencil(MultiFab)");
-    pdump_start_region_with_name("BilinearFilter::ApplyStencil(MultiFab)");
+pdump_start_region_with_name("BilinearFilter::ApplyStencil(MultiFab)");
+pdump_start_profile();
     ncomp = std::min(ncomp, srcmf.nComp());
 
-    pdump_start_profile();
     for (MFIter mfi(dstmf); mfi.isValid(); ++mfi)
     {
         const auto& src = srcmf.array(mfi);
@@ -51,8 +51,8 @@ Filter::ApplyStencil (MultiFab& dstmf, const MultiFab& srcmf, int scomp, int dco
         // Apply filter
         DoFilter(tbx, tmp, dst, 0, dcomp, ncomp);
     }
-    pdump_end_profile();
-    pdump_end_region();
+pdump_end_profile();
+pdump_end_region();
 }
 
 /* \brief Apply stencil on FArrayBox (GPU version, 2D/3D).
@@ -68,9 +68,8 @@ Filter::ApplyStencil (FArrayBox& dstfab, const FArrayBox& srcfab,
                       const Box& tbx, int scomp, int dcomp, int ncomp)
 {
     BL_PROFILE("BilinearFilter::ApplyStencil(FArrayBox)");
-    pdump_start_region_with_name(  "BilinearFilter::ApplyStencil(FArrayBox)" );
-    pdump_start_profile();
-
+pdump_start_region_with_name("BilinearFilter::ApplyStencil(FArrayBox)");
+pdump_start_profile();
     ncomp = std::min(ncomp, srcfab.nComp());
     const auto& src = srcfab.array();
     const auto& dst = dstfab.array();
@@ -94,8 +93,8 @@ Filter::ApplyStencil (FArrayBox& dstfab, const FArrayBox& srcfab,
 
     // Apply filter
     DoFilter(tbx, tmp, dst, 0, dcomp, ncomp);
-    pdump_end_profile();
-    pdump_end_region();
+pdump_end_profile();
+pdump_end_region();
 }
 
 /* \brief Apply stencil (2D/3D, CPU/GPU)
@@ -157,14 +156,15 @@ void
 Filter::ApplyStencil (MultiFab& dstmf, const MultiFab& srcmf, int scomp, int dcomp, int ncomp)
 {
     BL_PROFILE("BilinearFilter::ApplyStencil()");
-    pdump_start_region_with_name(  "BilinearFilter::ApplyStencil()" );
+pdump_start_region_with_name("BilinearFilter::ApplyStencil()");
+pdump_start_profile();
+
     ncomp = std::min(ncomp, srcmf.nComp());
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
     {
         FArrayBox tmpfab;
-        pdump_start_profile();
         for (MFIter mfi(dstmf,true); mfi.isValid(); ++mfi){
             const auto& srcfab = srcmf[mfi];
             auto& dstfab = dstmf[mfi];
@@ -179,9 +179,9 @@ Filter::ApplyStencil (MultiFab& dstmf, const MultiFab& srcmf, int scomp, int dco
             // Apply filter
             DoFilter(tbx, tmpfab.array(), dstfab.array(), 0, dcomp, ncomp);
         }
-    pdump_end_profile();
     }
-    pdump_end_region();
+pdump_end_profile();
+pdump_end_region();
 }
 
 /* \brief Apply stencil on FArrayBox (CPU version, 2D/3D).
@@ -197,9 +197,8 @@ Filter::ApplyStencil (FArrayBox& dstfab, const FArrayBox& srcfab,
                       const Box& tbx, int scomp, int dcomp, int ncomp)
 {
     BL_PROFILE("BilinearFilter::ApplyStencil(FArrayBox)");
-    pdump_start_region_with_name(  "BilinearFilter::ApplyStencil(FArrayBox)" );
-    pdump_start_profile();
-
+pdump_start_region_with_name("BilinearFilter::ApplyStencil(FArrayBox)");
+pdump_start_profile();
     ncomp = std::min(ncomp, srcfab.nComp());
     FArrayBox tmpfab;
     const Box& gbx = amrex::grow(tbx,stencil_length_each_dir-1);
@@ -211,8 +210,8 @@ Filter::ApplyStencil (FArrayBox& dstfab, const FArrayBox& srcfab,
     tmpfab.copy(srcfab, ibx, scomp, ibx, 0, ncomp);
     // Apply filter
     DoFilter(tbx, tmpfab.array(), dstfab.array(), 0, dcomp, ncomp);
-    pdump_end_profile();
-    pdump_end_region();
+pdump_end_profile();
+pdump_end_region();
 }
 
 void Filter::DoFilter (const Box& tbx,
@@ -220,6 +219,8 @@ void Filter::DoFilter (const Box& tbx,
                        Array4<Real      > const& dst,
                        int scomp, int dcomp, int ncomp)
 {
+pdump_start_region_with_name("Filter::DoFilter");
+pdump_start_profile();
     const auto lo = amrex::lbound(tbx);
     const auto hi = amrex::ubound(tbx);
     // tmp and dst are of type Array4 (Fortran ordering)
@@ -271,6 +272,8 @@ void Filter::DoFilter (const Box& tbx,
             }
         }
     }
+pdump_end_profile();
+pdump_end_region();
 }
 
 #endif // #ifdef AMREX_USE_CUDA

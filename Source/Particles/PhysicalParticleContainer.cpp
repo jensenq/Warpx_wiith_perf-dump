@@ -6,7 +6,6 @@
 #include <WarpX.H>
 #include <WarpXConst.H>
 #include <WarpXWrappers.h>
-#include "perf_dump.h"
 
 
 using namespace amrex;
@@ -182,8 +181,7 @@ void PhysicalParticleContainer::MapParticletoBoostedFrame(Real& x, Real& y, Real
 void
 PhysicalParticleContainer::AddGaussianBeam(Real x_m, Real y_m, Real z_m,
                                            Real x_rms, Real y_rms, Real z_rms,
-                                           Real q_tot, long npart, 
-                                           int do_symmetrize) {
+                                           Real q_tot, long npart) {
 
     const Geometry& geom     = m_gdb->Geom(0);
     RealBox containing_bx = geom.ProbDomain();
@@ -193,15 +191,13 @@ PhysicalParticleContainer::AddGaussianBeam(Real x_m, Real y_m, Real z_m,
     std::normal_distribution<double> disty(y_m, y_rms);
     std::normal_distribution<double> distz(z_m, z_rms);
 
+    std::array<Real,PIdx::nattribs> attribs;
+    attribs.fill(0.0);
+
     if (ParallelDescriptor::IOProcessor()) {
-        std::array<Real, 3> u;
-        Real weight;
-        // If do_symmetrize, create 4x fewer particles, and 
-        // Replicate each particle 4 times (x,y) (-x,y) (x,-y) (-x,-y)
-        if (do_symmetrize){
-            npart /= 4;
-        }
-        for (long i = 0; i < npart; ++i) {
+       std::array<Real, 3> u;
+       Real weight;
+       for (long i = 0; i < npart; ++i) {
 #if ( AMREX_SPACEDIM == 3 | WARPX_RZ)
             weight = q_tot/npart/charge;
             Real x = distx(mt);
@@ -213,27 +209,29 @@ PhysicalParticleContainer::AddGaussianBeam(Real x_m, Real y_m, Real z_m,
             Real y = 0.;
             Real z = distz(mt);
 #endif
-            if (plasma_injector->insideBounds(x, y, z)) {
-                plasma_injector->getMomentum(u, x, y, z);
-                if (do_symmetrize){
-                    std::array<Real, 3> u_tmp;
-                    Real x_tmp, y_tmp;
-                    // Add four particles to the beam:
-                    // (x,ux,y,uy) (-x,-ux,y,uy) (x,ux,-y,-uy) (-x,-ux,-y,-uy)
-                    for (int ix=0; ix<2; ix++){
-                        for (int iy=0; iy<2; iy++){
-                            u_tmp = u;
-                            x_tmp     = x*std::pow(-1,ix);
-                            u_tmp[0] *= std::pow(-1,ix);
-                            y_tmp     = y*std::pow(-1,iy);
-                            u_tmp[1] *= std::pow(-1,iy);
-                            CheckAndAddParticle(x_tmp, y_tmp, z, 
-                                                u_tmp, weight/4);
-                        }
-                    }
-                } else {
-                    CheckAndAddParticle(x, y, z, u, weight);
-                }
+        if (plasma_injector->insideBounds(x, y, z)) {
+	    plasma_injector->getMomentum(u, x, y, z);
+            if (WarpX::gamma_boost > 1.) {
+                MapParticletoBoostedFrame(x, y, z, u);
+            }
+            attribs[PIdx::ux] = u[0];
+            attribs[PIdx::uy] = u[1];
+            attribs[PIdx::uz] = u[2];
+            attribs[PIdx::w ] = weight;
+
+            if (WarpX::do_boosted_frame_diagnostic && do_boosted_frame_diags)
+            {
+                auto& particle_tile = DefineAndReturnParticleTile(0, 0, 0);
+                particle_tile.push_back_real(particle_comps["xold"], x);
+                particle_tile.push_back_real(particle_comps["yold"], y);
+                particle_tile.push_back_real(particle_comps["zold"], z);
+                
+                particle_tile.push_back_real(particle_comps["uxold"], u[0]);
+                particle_tile.push_back_real(particle_comps["uyold"], u[1]);
+                particle_tile.push_back_real(particle_comps["uzold"], u[2]);
+            }
+            
+            AddOneParticle(0, 0, 0, x, y, z, attribs);
             }
         }
     }
@@ -241,44 +239,10 @@ PhysicalParticleContainer::AddGaussianBeam(Real x_m, Real y_m, Real z_m,
 }
 
 void
-PhysicalParticleContainer::CheckAndAddParticle(Real x, Real y, Real z,
-                                               std::array<Real, 3> u,
-                                               Real weight)
-{
-    std::array<Real,PIdx::nattribs> attribs;
-    attribs.fill(0.0);
-
-    // update attribs with input arguments
-    if (WarpX::gamma_boost > 1.) {
-        MapParticletoBoostedFrame(x, y, z, u);
-    }
-    attribs[PIdx::ux] = u[0];
-    attribs[PIdx::uy] = u[1];
-    attribs[PIdx::uz] = u[2];
-    attribs[PIdx::w ] = weight;
-
-    if (WarpX::do_boosted_frame_diagnostic && do_boosted_frame_diags)
-    {
-        // need to create old values
-        auto& particle_tile = DefineAndReturnParticleTile(0, 0, 0);
-        particle_tile.push_back_real(particle_comps["xold"], x);
-        particle_tile.push_back_real(particle_comps["yold"], y);
-        particle_tile.push_back_real(particle_comps["zold"], z);
-                
-        particle_tile.push_back_real(particle_comps["uxold"], u[0]);
-        particle_tile.push_back_real(particle_comps["uyold"], u[1]);
-        particle_tile.push_back_real(particle_comps["uzold"], u[2]);
-    }
-    // add particle
-    AddOneParticle(0, 0, 0, x, y, z, attribs);
-}
-
-void
 PhysicalParticleContainer::AddParticles (int lev)
 {
     BL_PROFILE("PhysicalParticleContainer::AddParticles()");
-pdump_start_region_with_name(  "PhysicalParticleContainer::AddParticles()" );
-pdump_start_profile();
+
     if (plasma_injector->add_single_particle) {
         AddNParticles(lev, 1,
                       &(plasma_injector->single_particle_pos[0]),
@@ -299,8 +263,7 @@ pdump_start_profile();
                         plasma_injector->y_rms,
                         plasma_injector->z_rms,
                         plasma_injector->q_tot,
-                        plasma_injector->npart,
-                        plasma_injector->do_symmetrize);
+                        plasma_injector->npart);
 
 
         return;
@@ -309,8 +272,6 @@ pdump_start_profile();
     if ( plasma_injector->doInjection() ) {
         AddPlasma( lev );
     }
-pdump_end_profile();
-pdump_end_region();
 }
 
 /**
@@ -337,7 +298,6 @@ void
 PhysicalParticleContainer::AddPlasmaCPU (int lev, RealBox part_realbox)
 {
     BL_PROFILE("PhysicalParticleContainer::AddPlasmaCPU");
-pdump_start_region_with_name(  "PhysicalParticleContainer::AddPlasmaCPU" );
 
     // If no part_realbox is provided, initialize particles in the whole domain
     const Geometry& geom = Geom(lev);
@@ -359,13 +319,11 @@ pdump_start_region_with_name(  "PhysicalParticleContainer::AddPlasmaCPU" );
 
 #ifdef _OPENMP
     // First touch all tiles in the map in serial
-pdump_start_profile();
     for (MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi) {
         const int grid_id = mfi.index();
         const int tile_id = mfi.LocalTileIndex();
         GetParticles(lev)[std::make_pair(grid_id, tile_id)];
     }
-pdump_end_profile();
 #endif
 
     MultiFab* cost = WarpX::getCosts(lev);
@@ -393,7 +351,6 @@ pdump_end_profile();
         attribs.fill(0.0);
 
         // Loop through the tiles
-pdump_start_profile();
         for (MFIter mfi = MakeMFIter(lev, info); mfi.isValid(); ++mfi) {
 
             Real wt = amrex::second();
@@ -564,17 +521,14 @@ pdump_start_profile();
 
             if (cost) {
 	        wt = (amrex::second() - wt) / tile_box.d_numPts();
-                Array4<Real> const& costarr = cost->array(mfi);
-                amrex::ParallelFor(tile_box,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                FArrayBox* costfab = cost->fabPtr(mfi);
+                AMREX_LAUNCH_HOST_DEVICE_LAMBDA ( tile_box, work_box,
                 {
-                    costarr(i,j,k) += wt;
+                    costfab->plus(wt, work_box);
                 });
             }
         }
-pdump_end_profile();
     }
-pdump_end_region();
 }
 
 #ifdef AMREX_USE_GPU
@@ -582,7 +536,6 @@ void
 PhysicalParticleContainer::AddPlasmaGPU (int lev, RealBox part_realbox)
 {
     BL_PROFILE("PhysicalParticleContainer::AddPlasmaGPU");
-pdump_start_region_with_name(  "PhysicalParticleContainer::AddPlasmaGPU" );
 
     // If no part_realbox is provided, initialize particles in the whole domain
     const Geometry& geom = Geom(lev);
@@ -604,13 +557,11 @@ pdump_start_region_with_name(  "PhysicalParticleContainer::AddPlasmaGPU" );
 
 #ifdef _OPENMP
     // First touch all tiles in the map in serial
-pdump_start_profile();
     for (MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi) {
         const int grid_id = mfi.index();
         const int tile_id = mfi.LocalTileIndex();
         GetParticles(lev)[std::make_pair(grid_id, tile_id)];
     }
-pdump_end_profile();
 #endif
 
     MultiFab* cost = WarpX::getCosts(lev);
@@ -638,7 +589,6 @@ pdump_end_profile();
         attribs.fill(0.0);
 
         // Loop through the tiles
-pdump_start_profile();
         for (MFIter mfi = MakeMFIter(lev, info); mfi.isValid(); ++mfi) {
 
             Real wt = amrex::second();
@@ -845,17 +795,14 @@ pdump_start_profile();
 	    			 
             if (cost) {
 	        wt = (amrex::second() - wt) / tile_box.d_numPts();
-                Array4<Real> const& costarr = cost->array(mfi);
-                amrex::ParallelFor(tile_box,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                FArrayBox* costfab = cost->fabPtr(mfi);
+                AMREX_LAUNCH_HOST_DEVICE_LAMBDA ( tile_box, work_box,
                 {
-                    costarr(i,j,k) += wt;
+                    costfab->plus(wt, work_box);
                 });
             }
         }		
-pdump_end_profile();
     }
-pdump_end_region();
 }
 #endif
 
@@ -1024,10 +971,8 @@ PhysicalParticleContainer::EvolveES (const Vector<std::array<std::unique_ptr<Mul
                                      Real t, Real dt)
 {
     BL_PROFILE("PPC::EvolveES()");
-pdump_start_region_with_name( "PPC::EvolveES()"  );
 
     int num_levels = rho.size();
-pdump_start_profile();
     for (int lev = 0; lev < num_levels; ++lev) {
         BL_ASSERT(OnSameGrids(lev, *rho[lev]));
         const auto& gm = m_gdb->Geom(lev);
@@ -1069,8 +1014,6 @@ pdump_start_profile();
                                prob_domain.lo(), prob_domain.hi());
         }
     }
-pdump_end_profile();
-pdump_end_region();
 }
 #endif // WARPX_DO_ELECTROSTATIC
 
@@ -1159,11 +1102,10 @@ PhysicalParticleContainer::FieldGather (int lev,
             if (cost) {
                 const Box& tbx = pti.tilebox();
                 wt = (amrex::second() - wt) / tbx.d_numPts();
-                Array4<Real> const& costarr = cost->array(pti);
-                amrex::ParallelFor(tbx,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                FArrayBox* costfab = cost->fabPtr(pti);
+                AMREX_LAUNCH_HOST_DEVICE_LAMBDA ( tbx, work_box,
                 {
-                    costarr(i,j,k) += wt;
+                    costfab->plus(wt, work_box);
                 });
             }
         }
@@ -1220,9 +1162,6 @@ PhysicalParticleContainer::Evolve (int lev,
         RealVector tmp;
         ParticleVector particle_tmp;
 
-
-pdump_start_region_with_name("PPC::Evolve()");
-pdump_start_profile();
 	for (WarpXParIter pti(*this, lev); pti.isValid(); ++pti)
 	{
             Real wt = amrex::second();
@@ -1319,8 +1258,6 @@ pdump_start_profile();
             if (has_buffer && !do_not_push)
             {
                 BL_PROFILE_VAR_START(blp_partition);
-//pdump_start_region_with_name( "PPC::Evolve::partition"  );
-//pdump_start_profile();
                 inexflag.resize(np);
                 auto& aos = pti.GetArrayOfStructs();
                 // We need to partition the large buffer first
@@ -1404,8 +1341,6 @@ pdump_start_profile();
                     }
                     std::swap(uzp, tmp);
                 }
-//pdump_end_profile();
-//pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_partition);
             }
 
@@ -1415,12 +1350,7 @@ pdump_start_profile();
 	    // copy data from particle container to temp arrays
 	    //
 	    BL_PROFILE_VAR_START(blp_copy);
-//pdump_start_region_with_name( "PPC::Evolve::Copy"  );
-//pdump_start_profile();
             pti.GetPosition(m_xp[thread_num], m_yp[thread_num], m_zp[thread_num]);
-
-//pdump_end_profile();
-//pdump_end_region();
 	    BL_PROFILE_VAR_STOP(blp_copy);
 
             if (rho) DepositCharge(pti, wp, rho, crho, 0, np_current, np, thread_num, lev);
@@ -1439,8 +1369,6 @@ pdump_start_profile();
                 const long np_gather = (cEx) ? nfine_gather : np;
 
                 BL_PROFILE_VAR_START(blp_pxr_fg);
-//pdump_start_region_with_name( "PICSAR::FieldGather"  );
-//pdump_start_profile();
 
                 warpx_geteb_energy_conserving(
                     &np_gather,
@@ -1550,20 +1478,14 @@ pdump_start_profile();
                         &lvect_fieldgathe, &WarpX::field_gathering_algo);
                 }
 
-//pdump_end_profile();
-//pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_pxr_fg);
 
                 //
                 // Particle Push
                 //
                 BL_PROFILE_VAR_START(blp_pxr_pp);
-//pdump_start_region_with_name( "PICSAR::ParticlePush"  );
-//pdump_start_profile();
                 PushPX(pti, m_xp[thread_num], m_yp[thread_num], m_zp[thread_num], 
                        m_giv[thread_num], dt);
-//pdump_end_profile();
-//pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_pxr_pp);
 
                 //
@@ -1576,11 +1498,7 @@ pdump_start_profile();
                 // copy particle data back
                 //
                 BL_PROFILE_VAR_START(blp_copy);
-//pdump_start_region_with_name( "PPC::Evolve::Copy"  );
-//pdump_start_profile();
                 pti.SetPosition(m_xp[thread_num], m_yp[thread_num], m_zp[thread_num]);
-//pdump_end_profile();
-//pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_copy);
             }
             
@@ -1589,16 +1507,13 @@ pdump_start_profile();
             if (cost) {
                 const Box& tbx = pti.tilebox();
                 wt = (amrex::second() - wt) / tbx.d_numPts();
-                Array4<Real> const& costarr = cost->array(pti);
-                amrex::ParallelFor(tbx,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                FArrayBox* costfab = cost->fabPtr(pti);
+                AMREX_LAUNCH_HOST_DEVICE_LAMBDA ( tbx, work_box,
                 {
-                    costarr(i,j,k) += wt;
+                    costfab->plus(wt, work_box);
                 });
             }
         }
-pdump_end_profile();
-pdump_end_region();
     }
     // Split particles
     if (do_splitting){ SplitParticles(lev); }
@@ -1814,7 +1729,6 @@ PhysicalParticleContainer::PushP (int lev, Real dt,
                                   const MultiFab& Bx, const MultiFab& By, const MultiFab& Bz)
 {
     BL_PROFILE("PhysicalParticleContainer::PushP");
-pdump_start_region_with_name(  "PhysicalParticleContainer::PushP" );
 
     if (do_not_push) return;
 
@@ -1829,7 +1743,6 @@ pdump_start_region_with_name(  "PhysicalParticleContainer::PushP" );
 #else
         int thread_num = 0;
 #endif      
-pdump_start_profile();
         for (WarpXParIter pti(*this, lev); pti.isValid(); ++pti)
 	{
 	    const Box& box = pti.validbox();
@@ -1907,9 +1820,7 @@ pdump_start_profile();
                                           &this->charge, &this->mass, &dt,
                                           &WarpX::particle_pusher_algo);
         }
-pdump_end_profile();
     }
-pdump_end_region();
 }
 
 void PhysicalParticleContainer::GetParticleSlice(const int direction, const Real z_old,
@@ -1918,7 +1829,6 @@ void PhysicalParticleContainer::GetParticleSlice(const int direction, const Real
                                                  DiagnosticParticles& diagnostic_particles)
 {
     BL_PROFILE("PhysicalParticleContainer::GetParticleSlice");
-pdump_start_region_with_name(  "PhysicalParticleContainer::GetParticleSlice" );
 
     // Assume that the boost in the positive z direction.
 #if (AMREX_SPACEDIM == 2)
@@ -1945,8 +1855,7 @@ pdump_start_region_with_name(  "PhysicalParticleContainer::GetParticleSlice" );
     slice_box.setHi(direction, z_max);
 
     diagnostic_particles.resize(finestLevel()+1);
-
-pdump_start_profile(); 
+    
     for (int lev = 0; lev < nlevs; ++lev) {
 
         const Real* dx  = Geom(lev).CellSize();
@@ -2040,7 +1949,6 @@ pdump_start_profile();
             }
         }
     }
-pdump_end_region();
 }
 
 int PhysicalParticleContainer::GetRefineFac(const Real x, const Real y, const Real z)

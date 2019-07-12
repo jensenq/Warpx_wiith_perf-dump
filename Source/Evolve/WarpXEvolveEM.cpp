@@ -13,14 +13,13 @@
 #include <AMReX_AmrMeshInSituBridge.H>
 #endif
 
-#include "perf_dump.h"
 using namespace amrex;
 
 void
 WarpX::EvolveEM (int numsteps)
 {
     BL_PROFILE("WarpX::EvolveEM()");
-    pdump_start_region_with_name("WarpX::EvolveEM()");
+
     Real cur_time = t_new[0];
     static int last_plot_file_step = 0;
     static int last_check_file_step = 0;
@@ -42,7 +41,6 @@ WarpX::EvolveEM (int numsteps)
     for (int step = istep[0]; step < numsteps_max && cur_time < stop_time; ++step)
     {
         Real walltime_beg_step = amrex::second();
-        pdump_start_profile();
 
         // Start loop on time steps
         amrex::Print() << "\nSTEP " << step+1 << " starts ...\n";
@@ -86,14 +84,12 @@ WarpX::EvolveEM (int numsteps)
                             *Bfield_aux[lev][0],*Bfield_aux[lev][1],*Bfield_aux[lev][2]);
             }
             is_synchronized = false;
-
         } else {
             // Beyond one step, we have E^{n} and B^{n}.
             // Particles have p^{n-1/2} and x^{n}.
             FillBoundaryE();
             FillBoundaryB();
             UpdateAuxilaryData();
-
         }
 
         if (do_subcycling == 0 || finest_level == 0) {
@@ -137,8 +133,7 @@ WarpX::EvolveEM (int numsteps)
         bool to_make_plot = (plot_int > 0) && ((step+1) % plot_int == 0);
 
         // slice generation //
-        bool to_make_slice_plot = (slice_plot_int > 0) && ( (step+1)% slice_plot_int == 0); 
-
+        bool to_make_slice_plot = (slice_plot_int > 0) && ( (step+1)% slice_plot_int == 0);        
         bool do_insitu = ((step+1) >= insitu_start) &&
             (insitu_int > 0) && ((step+1) % insitu_int == 0);
 
@@ -164,8 +159,7 @@ WarpX::EvolveEM (int numsteps)
 
         amrex::Print()<< "STEP " << step+1 << " ends." << " TIME = " << cur_time
                       << " DT = " << dt[0] << "\n";
-        pdump_end_profile();
-	Real walltime_end_step = amrex::second();
+        Real walltime_end_step = amrex::second();
         walltime = walltime_end_step - walltime_start;
         amrex::Print()<< "Walltime = " << walltime
                       << " s; This step = " << walltime_end_step-walltime_beg_step
@@ -214,6 +208,7 @@ WarpX::EvolveEM (int numsteps)
             if (do_insitu)
                 UpdateInSitu();
 	}
+
         if (check_int > 0 && (step+1) % check_int == 0) {
             last_check_file_step = step+1;
             WriteCheckPointFile();
@@ -265,7 +260,7 @@ WarpX::EvolveEM (int numsteps)
     if (do_boosted_frame_diagnostic) {
         myBFD->Flush(geom[0]);
     }
-   pdump_end_region();
+
 #ifdef BL_USE_SENSEI_INSITU
     insitu_bridge->finalize();
 #endif
@@ -288,7 +283,6 @@ WarpX::OneStep_nosub (Real cur_time)
     if (warpx_py_beforedeposition) warpx_py_beforedeposition();
 #endif
     PushParticlesandDepose(cur_time);
-
 #ifdef WARPX_USE_PY
     if (warpx_py_afterdeposition) warpx_py_afterdeposition();
 #endif

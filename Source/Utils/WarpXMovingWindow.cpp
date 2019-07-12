@@ -1,8 +1,7 @@
 
 #include <WarpX.H>
 #include <WarpXConst.H>
-
-#include "perf_dump.h"
+#include "perf-dump.h"
 
 using namespace amrex;
 
@@ -209,7 +208,8 @@ void
 WarpX::shiftMF (MultiFab& mf, const Geometry& geom, int num_shift, int dir)
 {
     BL_PROFILE("WarpX::shiftMF()");
-pdump_start_region_with_name(   "WarpX::shiftMF()");
+pdump_start_region_with_name("WarpX::shiftMF()");
+pdump_start_profile();
     const BoxArray& ba = mf.boxArray();
     const DistributionMapping& dm = mf.DistributionMap();
     const int nc = mf.nComp();
@@ -217,7 +217,7 @@ pdump_start_region_with_name(   "WarpX::shiftMF()");
 
     AMREX_ALWAYS_ASSERT(ng.min() >= num_shift);
 
-    MultiFab tmpmf(ba, dm, nc, ng);
+    MultiFab tmpmf(ba, dm, nc, ng, MFInfo().SetDeviceFab(false));
     MultiFab::Copy(tmpmf, mf, 0, 0, nc, ng);
     tmpmf.FillBoundary(geom.periodicity());
 
@@ -232,7 +232,6 @@ pdump_start_region_with_name(   "WarpX::shiftMF()");
     }
     adjBox = amrex::convert(adjBox, typ);
 
-pdump_start_profile();
     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
         if (idim == dir and typ.nodeCentered(dir)) {
             if (num_shift > 0) {
@@ -245,7 +244,6 @@ pdump_start_profile();
             adjBox.growHi(idim, ng[idim]);
         }
     }
-pdump_end_profile();
 
     IntVect shiftiv(0);
     shiftiv[dir] = num_shift;
@@ -254,7 +252,6 @@ pdump_end_profile();
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-pdump_start_profile();
     for (MFIter mfi(tmpmf); mfi.isValid(); ++mfi )
     {
         auto const& dstfab = mf.array(mfi);

@@ -293,7 +293,6 @@ public:
     amrex::Real z_rms;
     amrex::Real q_tot;
     long npart;
-    int do_symmetrize = 0;
 
     bool radially_weighted = true;
 
