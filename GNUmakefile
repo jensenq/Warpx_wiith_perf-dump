@@ -8,8 +8,8 @@ DEBUG	= FALSE
 #DIM     = 2
 DIM	= 3
 
-COMP = gcc
-#COMP = intel
+#COMP = gcc
+COMP = intel
 #COMP = pgi
 
 TINY_PROFILE   = TRUE

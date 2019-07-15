@@ -208,8 +208,10 @@ void
 WarpX::shiftMF (MultiFab& mf, const Geometry& geom, int num_shift, int dir)
 {
     BL_PROFILE("WarpX::shiftMF()");
+
 pdump_start_region_with_name("WarpX::shiftMF()");
 pdump_start_profile();
+
     const BoxArray& ba = mf.boxArray();
     const DistributionMapping& dm = mf.DistributionMap();
     const int nc = mf.nComp();
@@ -217,7 +219,7 @@ pdump_start_profile();
 
     AMREX_ALWAYS_ASSERT(ng.min() >= num_shift);
 
-    MultiFab tmpmf(ba, dm, nc, ng, MFInfo().SetDeviceFab(false));
+    MultiFab tmpmf(ba, dm, nc, ng);
     MultiFab::Copy(tmpmf, mf, 0, 0, nc, ng);
     tmpmf.FillBoundary(geom.periodicity());
 
@@ -276,6 +278,7 @@ pdump_start_profile();
             dstfab(i,j,k,n) = srcfab(i+shift.x,j+shift.y,k+shift.z,n);
         });
     }
+
 pdump_end_profile();
 pdump_end_region();
 }

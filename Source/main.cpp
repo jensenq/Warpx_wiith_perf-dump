@@ -20,10 +20,10 @@ int main(int argc, char* argv[])
     assert(provided >= MPI_THREAD_FUNNELED);
 #else
     MPI_Init(&argc, &argv);
+pdump_init();
 #endif
 
     amrex::Initialize(argc,argv);
-pdump_init();
 
     ConvertLabParamsToBoost();
 
@@ -50,7 +50,7 @@ pdump_init();
 
     BL_PROFILE_VAR_STOP(pmain);
 
-pdump_finalize();
     amrex::Finalize();
+pdump_finalize;
     MPI_Finalize();
 }

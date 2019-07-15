@@ -12,6 +12,8 @@
 #include <omp.h>
 #endif
 
+#include "perf_dump.h"
+
 using namespace amrex;
 
 namespace
@@ -588,8 +590,8 @@ PML::ExchangeF (PatchType patch_type, MultiFab* Fp)
 void
 PML::Exchange (MultiFab& pml, MultiFab& reg, const Geometry& geom)
 {
-pdump_end_region_with_name("PML::Exchange");
-pdump_end_profile();
+pdump_start_region_with_name("PML::Exchange");
+pdump_start_profile();
     const IntVect& ngr = reg.nGrowVect();
     const IntVect& ngp = pml.nGrowVect();
     const int ncp = pml.nComp();
