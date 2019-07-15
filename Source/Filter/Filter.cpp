@@ -219,14 +219,14 @@ void Filter::DoFilter (const Box& tbx,
                        Array4<Real      > const& dst,
                        int scomp, int dcomp, int ncomp)
 {
-pdump_start_region_with_name("Filter::DoFilter");
-pdump_start_profile();
     const auto lo = amrex::lbound(tbx);
     const auto hi = amrex::ubound(tbx);
     // tmp and dst are of type Array4 (Fortran ordering)
     amrex::Real const* AMREX_RESTRICT sx = stencil_x.data();
     amrex::Real const* AMREX_RESTRICT sy = stencil_y.data();
     amrex::Real const* AMREX_RESTRICT sz = stencil_z.data();
+pdump_start_region_with_name("Filter::DoFilter");
+pdump_start_profile();
     for (int n = 0; n < ncomp; ++n) {
         // Set dst value to 0.
         for         (int k = lo.z; k <= hi.z; ++k) {
