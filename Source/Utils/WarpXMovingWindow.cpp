@@ -209,8 +209,6 @@ WarpX::shiftMF (MultiFab& mf, const Geometry& geom, int num_shift, int dir)
 {
     BL_PROFILE("WarpX::shiftMF()");
 
-pdump_start_region_with_name("WarpX::shiftMF()");
-pdump_start_profile();
 
     const BoxArray& ba = mf.boxArray();
     const DistributionMapping& dm = mf.DistributionMap();
@@ -250,9 +248,11 @@ pdump_start_profile();
     IntVect shiftiv(0);
     shiftiv[dir] = num_shift;
     Dim3 shift = shiftiv.dim3();
+pdump_start_region_with_name("WarpX::shiftMF()");
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
+pdump_start_profile();
 #endif
     for (MFIter mfi(tmpmf); mfi.isValid(); ++mfi )
     {
