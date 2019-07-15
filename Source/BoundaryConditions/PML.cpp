@@ -590,12 +590,12 @@ PML::ExchangeF (PatchType patch_type, MultiFab* Fp)
 void
 PML::Exchange (MultiFab& pml, MultiFab& reg, const Geometry& geom)
 {
-pdump_start_region_with_name("PML::Exchange");
-pdump_start_profile();
     const IntVect& ngr = reg.nGrowVect();
     const IntVect& ngp = pml.nGrowVect();
     const int ncp = pml.nComp();
     const auto& period = geom.periodicity();
+pdump_start_region_with_name("PML::Exchange");
+pdump_start_profile();
 
     MultiFab tmpregmf(reg.boxArray(), reg.DistributionMap(), ncp, ngr);
 
