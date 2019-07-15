@@ -14,7 +14,6 @@ using namespace amrex;
 
 int main(int argc, char* argv[])
 {
-pdump_init();
 #if defined(_OPENMP) && defined(WARPX_USE_PSATD)
     int provided;
     MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
@@ -24,6 +23,7 @@ pdump_init();
 #endif
 
     amrex::Initialize(argc,argv);
+pdump_init();
 
     ConvertLabParamsToBoost();
 
@@ -50,6 +50,7 @@ pdump_init();
 
     BL_PROFILE_VAR_STOP(pmain);
 
+pdump_finalize();
     amrex::Finalize();
     MPI_Finalize();
 }
