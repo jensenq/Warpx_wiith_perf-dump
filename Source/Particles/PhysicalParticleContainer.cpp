@@ -359,13 +359,11 @@ pdump_start_region_with_name(  "PhysicalParticleContainer::AddPlasmaCPU" );
 
 #ifdef _OPENMP
     // First touch all tiles in the map in serial
-pdump_start_profile();
     for (MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi) {
         const int grid_id = mfi.index();
         const int tile_id = mfi.LocalTileIndex();
         GetParticles(lev)[std::make_pair(grid_id, tile_id)];
     }
-pdump_end_profile();
 #endif
 
     MultiFab* cost = WarpX::getCosts(lev);
@@ -393,7 +391,7 @@ pdump_end_profile();
         attribs.fill(0.0);
 
         // Loop through the tiles
-pdump_start_profile();
+	pdump_start_profile();
         for (MFIter mfi = MakeMFIter(lev, info); mfi.isValid(); ++mfi) {
 
             Real wt = amrex::second();
@@ -572,7 +570,7 @@ pdump_start_profile();
                 });
             }
         }
-pdump_end_profile();
+	pdump_end_profile();
     }
 pdump_end_region();
 }
@@ -604,13 +602,11 @@ pdump_start_region_with_name(  "PhysicalParticleContainer::AddPlasmaGPU" );
 
 #ifdef _OPENMP
     // First touch all tiles in the map in serial
-pdump_start_profile();
     for (MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi) {
         const int grid_id = mfi.index();
         const int tile_id = mfi.LocalTileIndex();
         GetParticles(lev)[std::make_pair(grid_id, tile_id)];
     }
-pdump_end_profile();
 #endif
 
     MultiFab* cost = WarpX::getCosts(lev);
@@ -1319,8 +1315,6 @@ pdump_start_profile();
             if (has_buffer && !do_not_push)
             {
                 BL_PROFILE_VAR_START(blp_partition);
-//pdump_start_region_with_name( "PPC::Evolve::partition"  );
-//pdump_start_profile();
                 inexflag.resize(np);
                 auto& aos = pti.GetArrayOfStructs();
                 // We need to partition the large buffer first
@@ -1404,8 +1398,6 @@ pdump_start_profile();
                     }
                     std::swap(uzp, tmp);
                 }
-//pdump_end_profile();
-//pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_partition);
             }
 
@@ -1415,12 +1407,8 @@ pdump_start_profile();
 	    // copy data from particle container to temp arrays
 	    //
 	    BL_PROFILE_VAR_START(blp_copy);
-//pdump_start_region_with_name( "PPC::Evolve::Copy"  );
-//pdump_start_profile();
             pti.GetPosition(m_xp[thread_num], m_yp[thread_num], m_zp[thread_num]);
 
-//pdump_end_profile();
-//pdump_end_region();
 	    BL_PROFILE_VAR_STOP(blp_copy);
 
             if (rho) DepositCharge(pti, wp, rho, crho, 0, np_current, np, thread_num, lev);
@@ -1439,8 +1427,6 @@ pdump_start_profile();
                 const long np_gather = (cEx) ? nfine_gather : np;
 
                 BL_PROFILE_VAR_START(blp_pxr_fg);
-//pdump_start_region_with_name( "PICSAR::FieldGather"  );
-//pdump_start_profile();
 
                 warpx_geteb_energy_conserving(
                     &np_gather,
@@ -1550,20 +1536,14 @@ pdump_start_profile();
                         &lvect_fieldgathe, &WarpX::field_gathering_algo);
                 }
 
-//pdump_end_profile();
-//pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_pxr_fg);
 
                 //
                 // Particle Push
                 //
                 BL_PROFILE_VAR_START(blp_pxr_pp);
-//pdump_start_region_with_name( "PICSAR::ParticlePush"  );
-//pdump_start_profile();
                 PushPX(pti, m_xp[thread_num], m_yp[thread_num], m_zp[thread_num], 
                        m_giv[thread_num], dt);
-//pdump_end_profile();
-//pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_pxr_pp);
 
                 //
@@ -1576,11 +1556,7 @@ pdump_start_profile();
                 // copy particle data back
                 //
                 BL_PROFILE_VAR_START(blp_copy);
-//pdump_start_region_with_name( "PPC::Evolve::Copy"  );
-//pdump_start_profile();
                 pti.SetPosition(m_xp[thread_num], m_yp[thread_num], m_zp[thread_num]);
-//pdump_end_profile();
-//pdump_end_region();
                 BL_PROFILE_VAR_STOP(blp_copy);
             }
             
@@ -1946,7 +1922,6 @@ pdump_start_region_with_name(  "PhysicalParticleContainer::GetParticleSlice" );
 
     diagnostic_particles.resize(finestLevel()+1);
 
-pdump_start_profile(); 
     for (int lev = 0; lev < nlevs; ++lev) {
 
         const Real* dx  = Geom(lev).CellSize();
@@ -1963,6 +1938,7 @@ pdump_start_profile();
 #pragma omp parallel
 #endif
         {
+		pdump_start_profile(); 
             RealVector xp_new, yp_new, zp_new;
 
             for (WarpXParIter pti(*this, lev); pti.isValid(); ++pti)
@@ -2039,6 +2015,7 @@ pdump_start_profile();
                 }
             }
         }
+	pdump_end_profile();
     }
 pdump_end_region();
 }
