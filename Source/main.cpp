@@ -20,9 +20,9 @@ int main(int argc, char* argv[])
     assert(provided >= MPI_THREAD_FUNNELED);
 #else
     MPI_Init(&argc, &argv);
-pdump_init();
 #endif
 
+	pdump_init();
     amrex::Initialize(argc,argv);
 
     ConvertLabParamsToBoost();
@@ -49,8 +49,9 @@ pdump_init();
     }
 
     BL_PROFILE_VAR_STOP(pmain);
-
+    printf("-------------------- HERE NOW!!!!!!!!!!-----\n");
     amrex::Finalize();
-pdump_finalize;
+    MPI_Barrier(MPI_COMM_WORLD);
+    pdump_finalize();
     MPI_Finalize();
 }
