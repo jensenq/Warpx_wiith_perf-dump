@@ -225,8 +225,8 @@ void Filter::DoFilter (const Box& tbx,
     amrex::Real const* AMREX_RESTRICT sx = stencil_x.data();
     amrex::Real const* AMREX_RESTRICT sy = stencil_y.data();
     amrex::Real const* AMREX_RESTRICT sz = stencil_z.data();
-pdump_start_region_with_name("Filter::DoFilter");
-pdump_start_profile();
+//pdump_start_region_with_name("Filter::DoFilter");
+//pdump_start_profile();
     for (int n = 0; n < ncomp; ++n) {
         // Set dst value to 0.
         for         (int k = lo.z; k <= hi.z; ++k) {
@@ -272,8 +272,8 @@ pdump_start_profile();
             }
         }
     }
-pdump_end_profile();
-pdump_end_region();
+//pdump_end_profile();
+//pdump_end_region();
 }
 
 #endif // #ifdef AMREX_USE_CUDA

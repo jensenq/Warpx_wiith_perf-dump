@@ -252,8 +252,8 @@ pdump_start_region_with_name("WarpX::shiftMF()");
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
-pdump_start_profile();
 #endif
+pdump_start_profile();
     for (MFIter mfi(tmpmf); mfi.isValid(); ++mfi )
     {
         auto const& dstfab = mf.array(mfi);
