@@ -50,10 +50,10 @@ pdump_start_profile();
 	}
     }
 
-pdump_end_profile();
-pdump_end_region();
     BL_PROFILE_VAR_STOP(pmain);
 
     amrex::Finalize();
+pdump_end_profile();
+pdump_end_region();
     MPI_Finalize();
 }

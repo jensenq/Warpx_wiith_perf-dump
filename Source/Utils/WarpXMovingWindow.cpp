@@ -209,7 +209,6 @@ void
 WarpX::shiftMF (MultiFab& mf, const Geometry& geom, int num_shift, int dir)
 {
     BL_PROFILE("WarpX::shiftMF()");
-pdump_start_region_with_name(   "WarpX::shiftMF()");
     const BoxArray& ba = mf.boxArray();
     const DistributionMapping& dm = mf.DistributionMap();
     const int nc = mf.nComp();
@@ -231,8 +230,6 @@ pdump_start_region_with_name(   "WarpX::shiftMF()");
         adjBox = adjCellLo(domainBox, dir, ng[dir]);
     }
     adjBox = amrex::convert(adjBox, typ);
-
-pdump_start_profile();
     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
         if (idim == dir and typ.nodeCentered(dir)) {
             if (num_shift > 0) {
@@ -245,15 +242,15 @@ pdump_start_profile();
             adjBox.growHi(idim, ng[idim]);
         }
     }
-pdump_end_profile();
 
     IntVect shiftiv(0);
     shiftiv[dir] = num_shift;
     Dim3 shift = shiftiv.dim3();
-
+pdump_start_region_with_name(   "WarpX::shiftMF()");
 #ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
+#pragma omp parallel
 #endif
+{
 pdump_start_profile();
     for (MFIter mfi(tmpmf); mfi.isValid(); ++mfi )
     {
@@ -280,6 +277,7 @@ pdump_start_profile();
         });
     }
 pdump_end_profile();
+}
 pdump_end_region();
 }
 

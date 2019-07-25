@@ -48,9 +48,10 @@ WarpX::DampPML (int lev, PatchType patch_type)
                                                               : pml[lev]->GetMultiSigmaBox_cp();
 
 #ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
+#pragma omp parallel 
 #endif
-			pdump_start_profile();		
+	{
+	pdump_start_profile();		
         for ( MFIter mfi(*pml_E[0], TilingIfNotGPU()); mfi.isValid(); ++mfi )
         {
             const Box& tex  = mfi.tilebox(Ex_nodal_flag);
@@ -82,6 +83,7 @@ WarpX::DampPML (int lev, PatchType patch_type)
             }
         }
 	pdump_end_profile();
-    }
+      }
 	pdump_end_region();
+   }
 }

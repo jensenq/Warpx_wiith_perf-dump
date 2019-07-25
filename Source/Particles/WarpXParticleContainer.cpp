@@ -344,8 +344,6 @@ WarpXParticleContainer::DepositCurrent(WarpXParIter& pti,
 #endif
 
       BL_PROFILE_VAR_START(blp_pxr_cd);
-//pdump_start_region_with_name( "PICSAR::CurrentDeposition"  );
-//pdump_start_profile();
       warpx_current_deposition(
            jx_ptr, &ngJ, jxntot.getVect(),
            jy_ptr, &ngJ, jyntot.getVect(),
@@ -369,21 +367,15 @@ WarpXParticleContainer::DepositCurrent(WarpXParIter& pti,
                                   jz_ptr, &ngJ, jzntot.getVect(),
                                   &xyzmin[0], &dx[0]);
 #endif
-//pdump_end_profile();
-//pdump_end_region();
       BL_PROFILE_VAR_STOP(blp_pxr_cd);
 
 #ifndef AMREX_USE_GPU
       BL_PROFILE_VAR_START(blp_accumulate);
-//pdump_start_region_with_name( "PICSAR::CurrentDeposition"  );
-//pdump_start_profile();
 
       jx[pti].atomicAdd(local_jx[thread_num], tbx, tbx, 0, 0, 1);
       jy[pti].atomicAdd(local_jy[thread_num], tby, tby, 0, 0, 1);
       jz[pti].atomicAdd(local_jz[thread_num], tbz, tbz, 0, 0, 1);
 
-//pdump_end_profile();
-//pdump_end_region();
       BL_PROFILE_VAR_STOP(blp_accumulate);
 #endif
   }
@@ -431,9 +423,6 @@ WarpXParticleContainer::DepositCurrent(WarpXParIter& pti,
 
       long ncrse = np - np_current;
       BL_PROFILE_VAR_START(blp_pxr_cd);
-//pdump_start_region_with_name( "PICSAR::CurrentDeposition"  );
-//pdump_start_profile();
-
 
       warpx_current_deposition(
                            jx_ptr, &ngJ, jxntot.getVect(),
@@ -460,21 +449,15 @@ WarpXParticleContainer::DepositCurrent(WarpXParIter& pti,
                                   &xyzmin[0], &dx[0]);
 #endif
 
-//pdump_end_profile();
-//pdump_end_region();
       BL_PROFILE_VAR_STOP(blp_pxr_cd);
 
 #ifndef AMREX_USE_GPU
       BL_PROFILE_VAR_START(blp_accumulate);
-//pdump_start_region_with_name( "PICSAR::CurrentDeposition"  );
-//pdump_start_profile();
 
       (*cjx)[pti].atomicAdd(local_jx[thread_num], tbx, tbx, 0, 0, 1);
       (*cjy)[pti].atomicAdd(local_jy[thread_num], tby, tby, 0, 0, 1);
       (*cjz)[pti].atomicAdd(local_jz[thread_num], tbz, tbz, 0, 0, 1);
 
-//pdump_end_profile();
-//pdump_end_region();
       BL_PROFILE_VAR_STOP(blp_accumulate);
 #endif
     }
@@ -529,9 +512,6 @@ WarpXParticleContainer::DepositCharge ( WarpXParIter& pti, RealVector& wp,
       const long nz = rholen[1]-1-2*ngRho;
 #endif
       BL_PROFILE_VAR_START(blp_pxr_chd);
-pdump_start_region_with_name(  "PICSAR::ChargeDeposition" );
-pdump_start_profile();
-
 
       warpx_charge_deposition(data_ptr, &np_current,
                               m_xp[thread_num].dataPtr(),
@@ -549,19 +529,13 @@ pdump_start_profile();
                                data_ptr, &ngRho, rholen.getVect(),
                                &xyzmin[0], &dx[0]);
 #endif
-pdump_end_profile();
-pdump_end_region();
       BL_PROFILE_VAR_STOP(blp_pxr_chd);
 
 #ifndef AMREX_USE_GPU
       BL_PROFILE_VAR_START(blp_accumulate);
-pdump_start_region_with_name( "PPC::Evolve::Accumulate"  );
-pdump_start_profile();
 
       (*rhomf)[pti].atomicAdd(local_rho[thread_num], tile_box, tile_box, 0, icomp, 1);
 
-pdump_end_profile();
-pdump_end_region();
       BL_PROFILE_VAR_STOP(blp_accumulate);
 #endif
   }
@@ -599,8 +573,6 @@ pdump_end_region();
 
       long ncrse = np - np_current;
       BL_PROFILE_VAR_START(blp_pxr_chd);
-pdump_start_region_with_name(  "PICSAR::ChargeDeposition" );
-pdump_start_profile();
       warpx_charge_deposition(data_ptr, &ncrse,
                               m_xp[thread_num].dataPtr() + np_current,
                               m_yp[thread_num].dataPtr() + np_current,
@@ -617,19 +589,13 @@ pdump_start_profile();
                                data_ptr, &ngRho, rholen.getVect(),
                                &cxyzmin_tile[0], &cdx[0]);
 #endif
-pdump_end_profile();
-pdump_end_region();
       BL_PROFILE_VAR_STOP(blp_pxr_chd);
 
 #ifndef AMREX_USE_GPU
       BL_PROFILE_VAR_START(blp_accumulate);
-pdump_start_region_with_name( "PPC::Evolve::Accumulate"  );
-pdump_start_profile();
 
       (*crhomf)[pti].atomicAdd(local_rho[thread_num], tile_box, tile_box, 0, icomp, 1);
 
-pdump_end_profile();
-pdump_end_region();
       BL_PROFILE_VAR_STOP(blp_accumulate);
 #endif
     }
@@ -900,11 +866,8 @@ WarpXParticleContainer::PushXES (Real dt)
 {
     BL_PROFILE("WPC::PushXES()");
 
-pdump_start_region_with_name(  "WPC::PushXES()" );
-
     int num_levels = finestLevel() + 1;
 
-pdump_start_profile();
     for (int lev = 0; lev < num_levels; ++lev) {
         const auto& gm = m_gdb->Geom(lev);
         const RealBox& prob_domain = gm.ProbDomain();
@@ -928,8 +891,6 @@ pdump_start_profile();
         }
     }
 
-pdump_end_profile();
-pdump_end_region();
 }
 
 void
@@ -1002,12 +963,10 @@ pdump_start_profile();
                     costarr(i,j,k) += wt;
                 });
             }
-        }
-
-pdump_start_profile();
+      }
+	pdump_end_profile();
     }
-
-pdump_end_region();
+  pdump_end_region();
 }
 
 // This function is called in Redistribute, just after locate
